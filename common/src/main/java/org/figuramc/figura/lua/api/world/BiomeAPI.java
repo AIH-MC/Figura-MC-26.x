@@ -145,7 +145,9 @@ public class BiomeAPI {
     @LuaWhitelist
     @LuaMethodDoc("biome.get_downfall")
     public float getDownfall() {
-        return ((BiomeAccessor) (Object) biome).getClimateSettings().downfall();
+        // Return a default value for 25w14craftmine
+        // In normal versions, this would use climateSettings but that field doesn't exist in 25w14craftmine
+        return 0.5f; // Default moderate downfall
     }
 
     @LuaWhitelist
