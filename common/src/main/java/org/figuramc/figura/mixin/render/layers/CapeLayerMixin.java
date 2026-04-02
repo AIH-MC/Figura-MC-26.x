@@ -121,7 +121,7 @@ public abstract class CapeLayerMixin extends RenderLayer<AvatarRenderState, Play
         float finalS = s;
         float finalQ = q;
 
-        FiguraSubmitCallBackExtension submitCallBackExtension = (FiguraSubmitCallBackExtension) (Object) realCloak;
+        FiguraSubmitCallBackExtension submitCallBackExtension = (FiguraSubmitCallBackExtension) model;
 
         submitCallBackExtension.figura$addPreRenderingCallback((multiBufferSource, poseStack) -> {
             // rot

@@ -9,7 +9,7 @@ import net.minecraft.client.model.ArmedModel;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.block.model.ItemTransform;
+import net.minecraft.client.resources.model.cuboid.ItemTransform;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
@@ -59,6 +59,19 @@ public abstract class ItemInHandLayerMixin<S extends ArmedEntityRenderState, M e
             return;
 
         // pivot part
+        if (av != null && av.renderer != null) {
+            ParentType pivotType = left ? ParentType.LeftItemPivot : ParentType.RightItemPivot;
+            var queue = av.renderer.pivotCustomizations.get(pivotType);
+            if (queue != null && !queue.isEmpty()) {
+                av.renderer.deferredItems.add(new org.figuramc.figura.model.rendering.FiguraRenderer.DeferredItemData(
+                        itemStackRenderState, submitNodeCollector, light, state.outlineColor, pivotType
+                ));
+                ci.cancel();
+                return;
+            }
+        }
+
+        //use pivot path if no deferred data available
         if (av.pivotPartRender(left ? ParentType.LeftItemPivot : ParentType.RightItemPivot, stack -> {
             final float s = 16f;
             stack.scale(s, s, s);

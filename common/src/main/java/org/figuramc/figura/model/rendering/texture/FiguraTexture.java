@@ -128,7 +128,12 @@ public class FiguraTexture extends SimpleTexture {
             backup.close();
 
         super.close();
-        ((TextureManagerAccessor) Minecraft.getInstance().getTextureManager()).getByPath().remove(this.getLocation());
+        // Sched removal from TextureManager to avoid ConcurrentModificationException
+        // when TextureManager.close() iterates byPath and FiguraTexture.close() tries to remove during iteration
+        Identifier location = this.getLocation();
+        Minecraft.getInstance().execute(() ->
+            ((TextureManagerAccessor) Minecraft.getInstance().getTextureManager()).getByPath().remove(location)
+        );
     }
 
     public void uploadIfDirty(boolean clamp, boolean blur) {

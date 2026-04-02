@@ -22,7 +22,6 @@ import net.minecraft.client.resources.model.EquipmentClientInfo;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -56,10 +55,10 @@ import java.util.Optional;
 public abstract class HumanoidArmorLayerMixinFabric<S extends HumanoidRenderState, M extends HumanoidModel<S>, A extends HumanoidModel<S>> extends RenderLayer<S, M> implements HumanoidArmorLayerAccessor<S, M, A> {
     @Shadow @Final private EquipmentLayerRenderer equipmentRenderer;
 
-    @Shadow protected abstract A getArmorModel(S humanoidRenderState, EquipmentSlot equipmentSlot);
+    @Shadow private A getArmorModel(S humanoidRenderState, EquipmentSlot equipmentSlot) { throw new AssertionError(); }
 
     @Shadow
-    protected abstract void renderArmorPiece(PoseStack matrices, SubmitNodeCollector submitNodeCollector, ItemStack stack, EquipmentSlot armorSlot, int light, S state);
+    private void renderArmorPiece(PoseStack matrices, SubmitNodeCollector submitNodeCollector, ItemStack stack, EquipmentSlot armorSlot, int light, S state) { throw new AssertionError(); }
 
     @Unique
     private boolean figura$renderingVanillaArmor;
@@ -272,7 +271,7 @@ public abstract class HumanoidArmorLayerMixinFabric<S extends HumanoidRenderStat
         modelPart.xRot = 0;
         modelPart.yRot = 0;
         modelPart.zRot = 0;
-        EquipmentClientInfo.LayerType layerType = this.usesInnerModel(armorSlot) ? EquipmentClientInfo.LayerType.HUMANOID_LEGGINGS : EquipmentClientInfo.LayerType.HUMANOID;
+        EquipmentClientInfo.LayerType layerType = this.invoke$usesInnerModel(armorSlot) ? EquipmentClientInfo.LayerType.HUMANOID_LEGGINGS : EquipmentClientInfo.LayerType.HUMANOID;
         Equippable equippable = itemStack.get(DataComponents.EQUIPPABLE);
 
         if (equippable == null)
@@ -284,7 +283,7 @@ public abstract class HumanoidArmorLayerMixinFabric<S extends HumanoidRenderStat
 
         List<EquipmentClientInfo.Layer> list = ((EquipmentLayerRendererAccessor)this.equipmentRenderer).figura$getAssetsManager().get(location.get()).getLayers(layerType);
 
-        int i = itemStack.is(ItemTags.DYEABLE) ? DyedItemColor.getOrDefault(itemStack, -6265536) : -1;
+        int i = itemStack.has(DataComponents.DYED_COLOR) ? DyedItemColor.getOrDefault(itemStack, -6265536) : -1;
         int order = 0;
 
         for(EquipmentClientInfo.Layer layer : list) {
@@ -311,7 +310,15 @@ public abstract class HumanoidArmorLayerMixinFabric<S extends HumanoidRenderStat
 
     @Unique
     protected void figura$setPartVisibility(A bipedModel, EquipmentSlot slot) {
-        bipedModel.setAllVisible(false);
+        // Hide all parts first
+        bipedModel.head.visible = false;
+        bipedModel.hat.visible = false;
+        bipedModel.body.visible = false;
+        bipedModel.rightArm.visible = false;
+        bipedModel.leftArm.visible = false;
+        bipedModel.rightLeg.visible = false;
+        bipedModel.leftLeg.visible = false;
+        // Show parts for the given slot
         switch (slot) {
             case HEAD:
                 bipedModel.head.visible = true;

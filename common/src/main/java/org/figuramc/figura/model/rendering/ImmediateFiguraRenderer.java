@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import org.figuramc.figura.FiguraMod;
@@ -68,6 +69,10 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
     public void updateMatrices() {
         // flag rendering state
         this.isRendering = true;
+
+        // clear old pivot customizations so calculatePartMatrices can populate fresh ones
+        for (var queue : pivotCustomizations.values())
+            queue.clear();
 
         // setup root customizations
         PartCustomization customization = setupRootCustomization(1.5d);
@@ -310,7 +315,7 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
                 FiguraVec3 pos = part.savedPartToWorldMat.apply(0d, 0d, 0d);
                 int block = l.getBrightness(LightLayer.BLOCK, pos.asBlockPos());
                 int sky = l.getBrightness(LightLayer.SKY, pos.asBlockPos());
-                customizationStack.peek().light = LightTexture.pack(block, sky);
+                customizationStack.peek().light = LightCoordsUtil.pack(block, sky);
             }
 
             if (custom.alpha != null)
@@ -557,6 +562,17 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
             FiguraMod.popPushProfiler("worldMatrices");
             FiguraMat4 mat = partToWorldMatrices(custom);
             part.savedPartToWorldMat.set(mat);
+
+            // save pivot transforms so they are available during the layers loop
+            if (part.parentType.isPivot && allowPivotParts) {
+                FiguraMod.popPushProfiler("savePivotParts");
+                FiguraVec3 pivot = custom.getPivot().copy().add(custom.getOffsetPivot());
+                pivotOffsetter.setPos(pivot);
+                pivotOffsetter.recalculate();
+                customizationStack.push(pivotOffsetter);
+                savePivotTransform(part.parentType, customizationStack.peek());
+                customizationStack.pop();
+            }
         }
 
         // render children
@@ -613,7 +629,7 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
         // get render type
         if (id != null) {
             if (translucent) {
-                ret.renderType = RenderTypes.itemEntityTranslucentCull(id);
+                ret.renderType = RenderTypes.entityTranslucentCullItemTarget(id);
                 return ret;
             }
             if (glowing) {
@@ -649,7 +665,7 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
         uvFixer.set(textureSet.getWidth(), textureSet.getHeight(), 1); // Dividing by this makes uv 0 to 1
 
         int overlay = customization.overlay;
-        int light = vertexData.fullBright ? LightTexture.FULL_BRIGHT : customization.light;
+        int light = vertexData.fullBright ? LightCoordsUtil.FULL_BRIGHT : customization.light;
 
         VERTEX_BUFFER.getBufferFor(vertexData.renderType, vertexData.primary, vertexConsumer -> {
             for (int i = 0; i < vertCount; i++) {

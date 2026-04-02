@@ -10,8 +10,7 @@ import net.minecraft.client.renderer.blockentity.SkullBlockRenderer;
 import net.minecraft.client.renderer.blockentity.state.SkullBlockRenderState;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.state.CameraRenderState;
-import net.minecraft.core.Direction;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ResolvableProfile;
@@ -47,7 +46,7 @@ public abstract class SkullBlockRendererMixin implements BlockEntityRenderer<Sku
     private static SkullBlockRenderState block;
 
     @Inject(at = @At("HEAD"), method = "submitSkull", cancellable = true)
-    private static void renderSkull(Direction direction, float yaw, float animationProgress, PoseStack stack, SubmitNodeCollector submitNodeCollector, int light, SkullModelBase model, RenderType renderLayer, int outlineColor, ModelFeatureRenderer.CrumblingOverlay crumblingOverlay, CallbackInfo ci) {
+    private static void renderSkull(float yaw, PoseStack stack, SubmitNodeCollector submitNodeCollector, int light, SkullModelBase model, RenderType renderLayer, int outlineColor, ModelFeatureRenderer.CrumblingOverlay crumblingOverlay, CallbackInfo ci) {
         // parse block and items first, so we can yeet them in case of a missed event
         if (avatar == null) {
             avatar = SkullBlockRendererHelper.getAvatar();
@@ -94,8 +93,9 @@ public abstract class SkullBlockRendererMixin implements BlockEntityRenderer<Sku
             boolean bool = localAvatar.skullRenderEvent(tickDelta, b, i, e, m);
 
             // render skull :3
+            //they are still broken but atleas they wont jumpscare you anymore by rendering in your face when you look into their general direction
             FiguraMod.popPushProfiler("render");
-            if (bool || localAvatar.skullRender(stack, bufferSource, light, direction, yaw))
+            if (bool || localAvatar.skullRender(poseStack, bufferSource, light, null, yaw))
                 return false;
 
             FiguraMod.popProfiler(5);
@@ -103,7 +103,7 @@ public abstract class SkullBlockRendererMixin implements BlockEntityRenderer<Sku
         });
     }
 
-    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/blockentity/SkullBlockRenderer;submitSkull(Lnet/minecraft/core/Direction;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/client/model/object/skull/SkullModelBase;Lnet/minecraft/client/renderer/rendertype/RenderType;ILnet/minecraft/client/renderer/feature/ModelFeatureRenderer$CrumblingOverlay;)V"), method = "submit(Lnet/minecraft/client/renderer/blockentity/state/SkullBlockRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V")
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/blockentity/SkullBlockRenderer;submitSkull(FLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/client/model/object/skull/SkullModelBase;Lnet/minecraft/client/renderer/rendertype/RenderType;ILnet/minecraft/client/renderer/feature/ModelFeatureRenderer$CrumblingOverlay;)V"), method = "submit(Lnet/minecraft/client/renderer/blockentity/state/SkullBlockRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;)V")
     public void render(SkullBlockRenderState skullBlockRenderState, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState cameraRenderState, CallbackInfo ci) {
         block = skullBlockRenderState;
         SkullBlockRendererAccessor.setRenderMode(SkullBlockRendererAccessor.SkullRenderMode.BLOCK);
@@ -116,7 +116,7 @@ public abstract class SkullBlockRendererMixin implements BlockEntityRenderer<Sku
     }
 
     @Inject(at = @At("HEAD"), method = "resolveSkullRenderType")
-    private static void getRenderType(SkullBlock.Type type, SkullBlockEntity skullBlockEntity, CallbackInfoReturnable<RenderType> cir) {
+    private void getRenderType(SkullBlock.Type type, SkullBlockEntity skullBlockEntity, CallbackInfoReturnable<RenderType> cir) {
         if (type == SkullBlock.Types.PLAYER) {
             ResolvableProfile profile = skullBlockEntity.getOwnerProfile();
             if (profile != null) {

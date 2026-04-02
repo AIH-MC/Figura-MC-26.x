@@ -7,8 +7,9 @@ import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.CachedOrthoProjectionMatrixBuffer;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.Projection;
+import net.minecraft.client.renderer.ProjectionMatrixBuffer;
 import net.minecraft.world.entity.Entity;
 import org.figuramc.figura.FiguraMod;
 import org.figuramc.figura.avatar.Avatar;
@@ -18,9 +19,10 @@ import org.joml.Matrix4fStack;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 public class FiguraGui {
-    private static final CachedOrthoProjectionMatrixBuffer guiProjectionMatrixBuffer = new CachedOrthoProjectionMatrixBuffer("gui", 1000.0F, 11000.0F, true);
+    private static final ProjectionMatrixBuffer guiProjectionMatrixBuffer = new ProjectionMatrixBuffer("gui");
+    private static final Projection guiProjection = new Projection();
 
-    public static void onRender(GuiGraphics guiGraphics, float tickDelta, CallbackInfo ci) {
+    public static void onRender(GuiGraphicsExtractor GuiGraphicsExtractor, float tickDelta, CallbackInfo ci) {
         if (AvatarManager.panic)
             return;
 
@@ -28,7 +30,7 @@ public class FiguraGui {
 
         // render popup menu below everything, as if it were in the world
         FiguraMod.pushProfiler("popupMenu");
-        PopupMenu.render(guiGraphics);
+        PopupMenu.render(GuiGraphicsExtractor);
         FiguraMod.popProfiler();
 
         // get avatar
@@ -39,8 +41,12 @@ public class FiguraGui {
         GpuBufferSlice previousProjectionMatrix = RenderSystem.getProjectionMatrixBuffer();
         ProjectionType previousProjectionType = RenderSystem.getProjectionType();
 
+        float guiWidth = (float)window.getWidth() / window.getGuiScale();
+        float guiHeight = (float)window.getHeight() / window.getGuiScale();
+        guiProjection.setupOrtho(guiWidth, guiHeight, 1000.0F, 11000.0F, true);
+
         RenderSystem.setProjectionMatrix(
-                guiProjectionMatrixBuffer.getBuffer((float)window.getWidth() / window.getGuiScale(), (float)window.getHeight() / window.getGuiScale()),
+                guiProjectionMatrixBuffer.getBuffer(guiProjection),
                 ProjectionType.ORTHOGRAPHIC
         );
 
@@ -53,14 +59,14 @@ public class FiguraGui {
             PoseStack stack = new PoseStack();
             stack.pushPose();
             stack.setIdentity();
-            stack.last().pose().mul(guiGraphics.pose());
+            stack.last().pose().mul(GuiGraphicsExtractor.pose());
 
             avatar.hudRender(stack, Minecraft.getInstance().renderBuffers().bufferSource(), entity, tickDelta);
             stack.popPose();
             // hud hidden by script
             if (avatar.luaRuntime != null && !avatar.luaRuntime.renderer.renderHUD) {
                 // render figura overlays
-                renderOverlays(guiGraphics);
+                renderOverlays(GuiGraphicsExtractor);
                 // cancel this method
                 ci.cancel();
             }
@@ -71,16 +77,16 @@ public class FiguraGui {
         FiguraMod.popProfiler();
     }
 
-    public static void renderOverlays(GuiGraphics guiGraphics) {
+    public static void renderOverlays(GuiGraphicsExtractor GuiGraphicsExtractor) {
         FiguraMod.pushProfiler(FiguraMod.MOD_ID);
 
         // render paperdoll
         FiguraMod.pushProfiler("paperdoll");
-        PaperDoll.render(guiGraphics, false);
+        PaperDoll.render(GuiGraphicsExtractor, false);
 
         // render wheel
         FiguraMod.popPushProfiler("actionWheel");
-        ActionWheel.render(guiGraphics);
+        ActionWheel.render(GuiGraphicsExtractor);
 
         FiguraMod.popProfiler(2);
     }
