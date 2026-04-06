@@ -121,9 +121,13 @@ public abstract class CapeLayerMixin extends RenderLayer<AvatarRenderState, Play
         float finalS = s;
         float finalQ = q;
 
+        Avatar localAvatar = avatar;
         FiguraSubmitCallBackExtension submitCallBackExtension = (FiguraSubmitCallBackExtension) model;
 
         submitCallBackExtension.figura$addPreRenderingCallback((multiBufferSource, poseStack) -> {
+            if (localAvatar == null)
+                return true;
+
             // rot
             fakeCloak.setRotation(
                     (float) Math.toRadians(6f + finalR / 2f + finalQ),
@@ -132,16 +136,16 @@ public abstract class CapeLayerMixin extends RenderLayer<AvatarRenderState, Play
             );
 
             // Copy rotations from fake cloak
-            if (avatar.luaRuntime != null) {
-                VanillaPart part = avatar.luaRuntime.vanilla_model.CAPE;
+            if (localAvatar.luaRuntime != null) {
+                VanillaPart part = localAvatar.luaRuntime.vanilla_model.CAPE;
                 part.save(model);
-                if (avatar.permissions.get(Permissions.VANILLA_MODEL_EDIT) == 1)
+                if (localAvatar.permissions.get(Permissions.VANILLA_MODEL_EDIT) == 1)
                     part.preTransform(model);
             }
 
             // Setup visibility for real cloak
-            if (RenderUtils.vanillaModelAndScript(avatar))
-                avatar.luaRuntime.vanilla_model.CAPE.posTransform(model);
+            if (RenderUtils.vanillaModelAndScript(localAvatar))
+                localAvatar.luaRuntime.vanilla_model.CAPE.posTransform(model);
 
             return true;
         });
@@ -150,7 +154,7 @@ public abstract class CapeLayerMixin extends RenderLayer<AvatarRenderState, Play
         poseStack.pushPose();
         poseStack.last().set(pose.last());
 
-        ((NodeCollectorExtension)submitNodeCollector).submitFiguraModel(avatar, playerRenderState, (avatar, renderState, multiBufferSource) -> {
+        ((NodeCollectorExtension)submitNodeCollector).submitFiguraModel(localAvatar, playerRenderState, (av, renderState, multiBufferSource) -> {
             // rot
             fakeCloak.setRotation(
                     (float) Math.toRadians(6f + finalR / 2f + finalQ),
@@ -159,23 +163,23 @@ public abstract class CapeLayerMixin extends RenderLayer<AvatarRenderState, Play
             );
 
             // Copy rotations from fake cloak
-            if (avatar.luaRuntime != null) {
-                VanillaPart part = avatar.luaRuntime.vanilla_model.CAPE;
+            if (av.luaRuntime != null) {
+                VanillaPart part = av.luaRuntime.vanilla_model.CAPE;
                 part.save(model);
-                if (avatar.permissions.get(Permissions.VANILLA_MODEL_EDIT) == 1)
+                if (av.permissions.get(Permissions.VANILLA_MODEL_EDIT) == 1)
                     part.preTransform(model);
             }
 
-            avatar.capeRender(entity, multiBufferSource, poseStack, renderState.lightCoords, tickDelta, fakeCloak);
+            av.capeRender(entity, multiBufferSource, poseStack, renderState.lightCoords, tickDelta, fakeCloak);
             return null;
 
         });
         submitCallBackExtension.figura$addPostRenderingCallback(() -> {
-            if (avatar == null)
+            if (localAvatar == null)
                 return;
 
-            if (avatar.luaRuntime != null)
-                avatar.luaRuntime.vanilla_model.CAPE.restore(model);
+            if (localAvatar.luaRuntime != null)
+                localAvatar.luaRuntime.vanilla_model.CAPE.restore(model);
 
             avatar = null;
         });

@@ -56,7 +56,10 @@ public abstract class GuiEntityRendererMixin extends PictureInPictureRenderer<Gu
 
     @Inject(method = "renderToTexture(Lnet/minecraft/client/renderer/state/gui/pip/GuiEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;)V", at = @At(value = "HEAD"))
     private void setPaperDollMode(GuiEntityRenderState guiEntityRenderState, PoseStack poseStack, CallbackInfo ci) {
-        UIHelper.paperdoll = true;
+        EntityRenderMode mode = ((GuiEntityRenderStateExtension) (Object) guiEntityRenderState).getRenderMode();
+        if (mode != null && mode != EntityRenderMode.MINECRAFT_GUI) {
+            UIHelper.paperdoll = true;
+        }
     }
 
     @Inject(method = "renderToTexture(Lnet/minecraft/client/renderer/state/gui/pip/GuiEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;)V", at = @At(value = "TAIL"))
