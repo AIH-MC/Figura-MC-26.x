@@ -85,6 +85,16 @@ public abstract class HumanoidArmorLayerMixinFabric<S extends HumanoidRenderStat
         figura$tryRenderArmorPart(EquipmentSlot.FEET,  this::figura$bootsRenderer, poseStack, humanoidRenderState, submitNodeCollector, i, ParentType.LeftBootPivot, ParentType.RightBootPivot);
     }
 
+    // Cancel vanilla renderArmorPiece when Figura handles armor rendering via onRenderEnd.
+    // This prevents double rendering (vanilla + pivot) and ensures trims/glint respect visibility.
+    @Inject(at = @At("HEAD"), method = "renderArmorPiece", cancellable = true)
+    public void figura$cancelVanillaArmor(PoseStack matrices, SubmitNodeCollector submitNodeCollector, ItemStack stack, EquipmentSlot armorSlot, int light, S state, CallbackInfo ci) {
+        if (figura$avatar != null && !figura$renderingVanillaArmor &&
+                figura$avatar.permissions.get(Permissions.VANILLA_MODEL_EDIT) == 1) {
+            ci.cancel();
+        }
+    }
+
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/layers/HumanoidArmorLayer;usesInnerModel(Lnet/minecraft/world/entity/EquipmentSlot;)Z"), method = "renderArmorPiece")
     public void addFiguraCallbacks(PoseStack matrices, SubmitNodeCollector submitNodeCollector, ItemStack stack, EquipmentSlot equipmentSlot, int light, S state, CallbackInfo ci) {
         if (figura$avatar == null) return;
@@ -291,9 +301,9 @@ public abstract class HumanoidArmorLayerMixinFabric<S extends HumanoidRenderStat
 
             if (k != 0) {
                 Identifier normalArmorResource = ((EquipmentLayerRendererAccessor)this.equipmentRenderer).layerTextureLookup().apply(new EquipmentLayerRenderer.LayerTextureKey(layerType, layer));
-                nodeCollector.order(order++).submitModelPart(modelPart, poseStack, RenderTypes.armorCutoutNoCull(normalArmorResource), light, OverlayTexture.NO_OVERLAY, null, 0, null);
+                nodeCollector.order(order++).submitModelPart(modelPart, poseStack, RenderTypes.armorCutoutNoCull(normalArmorResource), light, OverlayTexture.NO_OVERLAY, null, k, null);
                 if (hasGlint)
-                    nodeCollector.order(order++).submitModelPart(modelPart, poseStack, RenderTypes.armorEntityGlint(), light, OverlayTexture.NO_OVERLAY, null, 0, null);
+                    nodeCollector.order(order++).submitModelPart(modelPart, poseStack, RenderTypes.armorEntityGlint(), light, OverlayTexture.NO_OVERLAY, null, k, null);
                 hasGlint = false;
             }
         }

@@ -64,7 +64,7 @@ public class FiguraTexture extends SimpleTexture {
      */
     private final NativeImage nativeImageTexture;
     private NativeImage backup;
-    private boolean isClosed = false;
+    private volatile boolean isClosed = false;
 
     public FiguraTexture(Avatar owner, String name, byte[] data) {
         super(new FiguraIdentifier("avatar_tex/" + owner.owner + "/" + UUID.randomUUID()));
@@ -102,6 +102,9 @@ public class FiguraTexture extends SimpleTexture {
 
     @Override
     public @NotNull TextureContents loadContents(ResourceManager resourceManager) throws IOException {
+        if (isClosed) {
+            throw new IOException("FiguraTexture is closed");
+        }
         return new TextureContents(copy(), new TextureMetadataSection(false, false, MipmapStrategy.AUTO, 0));
     }
 
