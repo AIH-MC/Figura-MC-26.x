@@ -29,15 +29,24 @@ public class AuthHandler {
                 String username = user.getName();
                 String serverID = getServerID(username);
                 FiguraMod.debug("Joining \"{}\" on server \"{}\"", username, serverID);
-                minecraft.services().sessionService().joinServer(user.getProfileId(), user.getAccessToken(), serverID);
+                try {
+                    minecraft.services().sessionService().joinServer(user.getProfileId(), user.getAccessToken(),
+                            serverID);
+                } catch (InvalidCredentialsException e) {
+                    FiguraMod.LOGGER.info("Mojang Authentication Failed, Using Offline Mode");
+                } catch (AuthenticationUnavailableException e) {
+                    FiguraMod.LOGGER.info("Mojang Authentication Server Unavailable, Using Offline Mode");
+                }
                 NetworkStuff.authSuccess(getToken(serverID));
-            // cringe exceptions
+                // cringe exceptions
             } catch (AuthenticationUnavailableException e) {
-                NetworkStuff.authFail(Component.translatable("disconnect.loginFailedInfo.serversUnavailable").getString());
+                NetworkStuff
+                        .authFail(Component.translatable("disconnect.loginFailedInfo.serversUnavailable").getString());
             } catch (InvalidCredentialsException e) {
                 NetworkStuff.authFail(Component.translatable("disconnect.loginFailedInfo.invalidSession").getString());
             } catch (InsufficientPrivilegesException e) {
-                NetworkStuff.authFail(Component.translatable("disconnect.loginFailedInfo.insufficientPrivileges").getString());
+                NetworkStuff.authFail(
+                        Component.translatable("disconnect.loginFailedInfo.insufficientPrivileges").getString());
             } catch (UserBannedException e) {
                 NetworkStuff.authFail(Component.translatable("disconnect.loginFailedInfo.userBanned").getString());
             } catch (Exception e) {
@@ -46,10 +55,11 @@ public class AuthHandler {
         });
     }
 
-    // requests // 
+    // requests //
 
     protected static String request(HttpRequest request) throws Exception {
-        HttpResponse<String> response = NetworkStuff.client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        HttpResponse<String> response = NetworkStuff.client.send(request,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (response.statusCode() != 200)
             throw new Exception(response.body());
         return response.body();

@@ -216,7 +216,7 @@ public class Configs {
                     NetworkStuff.checkVersion();
                 }
             },
-            DEFAULT_PERMISSION_LEVEL = new ConfigType.EnumConfig("default_permission_level", MISC, 2, Permissions.Category.values().length) {
+            DEFAULT_PERMISSION_LEVEL = new ConfigType.EnumConfig("default_permission_level", MISC, 4, Permissions.Category.values().length) {
                 {
                     List<Component> list = new ArrayList<>();
                     Permissions.Category[] categories = Permissions.Category.values();
@@ -275,7 +275,7 @@ public class Configs {
         }
     };
     public static final ConfigType.IPConfig
-            SERVER_IP = new ConfigType.IPConfig("server_ip", DEV, "figura.moonlight-devs.org") {
+            SERVER_IP = new ConfigType.IPConfig("server_ip", DEV, "5d.aihmc.top") {
         @Override
         public void onChange() {
             super.onChange();

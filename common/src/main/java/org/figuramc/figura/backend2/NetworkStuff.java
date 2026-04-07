@@ -160,7 +160,7 @@ public class NetworkStuff {
     }
 
     private static boolean checkUUID(UUID id) {
-        if (id.version() != 4) {
+        if (id.version() < 3) {
             FiguraMod.debug("Voiding request for non v4 UUID \"" + id + "\" (v" + id.version() + ")");
             return true;
         }
