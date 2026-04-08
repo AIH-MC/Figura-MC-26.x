@@ -128,6 +128,7 @@
     "render.renderers.PlayerRendererMixin",
     "render.renderers.ScreenEffectRendererMixin",
     "render.renderers.SkullBlockRendererMixin",
+    "render.renderers.SkullBlockRenderStateMixin",
     "render.renderers.SpecialModelWrapperMixin",
     "render.renderers.ThrownTridentRenderStateMixin",
     "render.renderers.TridentRendererMixin",
