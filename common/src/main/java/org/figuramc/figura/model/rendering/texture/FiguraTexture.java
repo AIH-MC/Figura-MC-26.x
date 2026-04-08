@@ -103,7 +103,8 @@ public class FiguraTexture extends SimpleTexture {
     @Override
     public @NotNull TextureContents loadContents(ResourceManager resourceManager) throws IOException {
         if (isClosed) {
-            throw new IOException("FiguraTexture is closed");
+            NativeImage dummy = new NativeImage(1, 1, true);
+            return new TextureContents(dummy, new TextureMetadataSection(false, false, MipmapStrategy.AUTO, 0));
         }
         return new TextureContents(copy(), new TextureMetadataSection(false, false, MipmapStrategy.AUTO, 0));
     }
@@ -121,6 +122,11 @@ public class FiguraTexture extends SimpleTexture {
     public void close() {
         // Make sure it doesn't close twice (minecraft tries to close the texture when reloading textures
         if (isClosed) return;
+
+        if (!RenderSystem.isOnRenderThread()) {
+            Minecraft.getInstance().execute(this::close);
+            return;
+        }
 
         isClosed = true;
 
