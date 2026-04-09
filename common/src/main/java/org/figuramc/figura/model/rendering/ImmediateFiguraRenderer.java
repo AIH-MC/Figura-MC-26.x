@@ -661,6 +661,11 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
     private void pushToBuffer(int faceCount, VertexData vertexData, PartCustomization customization, FiguraTextureSet textureSet, List<Vertex> vertices) {
         int vertCount = faceCount * 4;
 
+        RenderType rt = vertexData.renderType;
+        if (rt == RenderTypes.lines()) {
+            return;
+        }
+
         FiguraVec3 uvFixer = FiguraVec3.of();
         uvFixer.set(textureSet.getWidth(), textureSet.getHeight(), 1); // Dividing by this makes uv 0 to 1
 
