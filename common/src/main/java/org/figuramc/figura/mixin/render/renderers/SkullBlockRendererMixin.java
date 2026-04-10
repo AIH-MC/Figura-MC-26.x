@@ -73,6 +73,13 @@ public abstract class SkullBlockRendererMixin implements BlockEntityRenderer<Sku
         if (localAvatar == null || localAvatar.permissions.get(Permissions.CUSTOM_SKULL) == 0)
             return;
 
+        // Skip Figura skull rendering for GUI/inventory context (hotbar, etc.)
+        // In this context, mode is OTHER, block is null, and entity is null.
+        // The deferred pipeline renders these in 3D world space, causing the skull
+        // to appear far away in the sky at screen-coordinate positions.
+        if (localMode == SkullBlockRendererAccessor.SkullRenderMode.OTHER && localBlock == null && localEntity == null)
+            return;
+
         float tickDelta = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
 
         FiguraSubmitCallBackExtension modelExtension = (FiguraSubmitCallBackExtension) model;
@@ -95,7 +102,7 @@ public abstract class SkullBlockRendererMixin implements BlockEntityRenderer<Sku
 
             // render skull :3
             FiguraMod.popPushProfiler("render");
-            if (bool || localAvatar.skullRender(stack, bufferSource, light, direction, yaw))
+            if (bool || localAvatar.skullRender(poseStack, bufferSource, light, direction, yaw, tickDelta))
                 return false;
 
             FiguraMod.popProfiler(5);
@@ -111,8 +118,11 @@ public abstract class SkullBlockRendererMixin implements BlockEntityRenderer<Sku
 
     @Override
     public boolean shouldRenderOffScreen() {
-        Avatar localAvatar = avatar; // avatar pointer incase avatar variable is set during render.
-        return localAvatar == null || localAvatar.permissions == null ? BlockEntityRenderer.super.shouldRenderOffScreen() : localAvatar.permissions.get(Permissions.OFFSCREEN_RENDERING) == 1;
+        // Always use default behavior for skull blocks.
+        // The OFFSCREEN_RENDERING permission is for entity rendering only.
+        // Using it here caused Figura skulls to render at unlimited distance
+        // and appear giant/always on screen.
+        return BlockEntityRenderer.super.shouldRenderOffScreen();
     }
 
     @Inject(at = @At("HEAD"), method = "resolveSkullRenderType")

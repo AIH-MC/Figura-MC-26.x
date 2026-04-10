@@ -60,6 +60,7 @@ import org.figuramc.figura.mixin.gui.GuiGraphicsAccessor;
 import org.figuramc.figura.model.FiguraModelPart;
 import org.figuramc.figura.model.ParentType;
 import org.figuramc.figura.model.PartCustomization;
+import org.figuramc.figura.model.VanillaModelData;
 import org.figuramc.figura.model.rendering.FiguraRenderer;
 import org.figuramc.figura.model.rendering.EntityRenderMode;
 import org.figuramc.figura.model.rendering.ImmediateFiguraRenderer;
@@ -714,25 +715,22 @@ public class Avatar {
         FiguraMod.popProfiler(2);
     }
 
-    public boolean skullRender(PoseStack stack, MultiBufferSource bufferSource, int light, Direction direction, float yaw) {
+    public boolean skullRender(PoseStack stack, MultiBufferSource bufferSource, int light, Direction direction, float yaw, float tickDelta) {
         if (renderer == null || !loaded || !renderer.interceptRendersIntoFigura)
             return false;
 
         stack.pushPose();
 
-        if (direction == null)
-            stack.translate(0.5d, 0d, 0.5d);
-        else
-            stack.translate((0.5d - direction.getStepX() * 0.25d), 0.25d, (0.5d - direction.getStepZ() * 0.25d));
-
-        stack.scale(-1f, -1f, 1f);
+        // Positioning (translate + scale) is already applied by vanilla's submitSkull
+        // in the deferred pipeline. Only apply the yaw rotation which vanilla handles
+        // via model animation (setupAnim) rather than PoseStack.
         stack.mulPose(Axis.YP.rotationDegrees(yaw));
 
         renderer.allowPivotParts = false;
 
         renderer.setupRenderer(
                 PartFilterScheme.SKULL, bufferSource, stack,
-                1f, light, 1f, OverlayTexture.NO_OVERLAY,
+                tickDelta, light, 1f, OverlayTexture.NO_OVERLAY,
                 false, false
         );
 
@@ -740,14 +738,14 @@ public class Avatar {
         complexity.use(comp);
 
         // head
-        boolean bool = comp > 0 || headRender(stack, bufferSource, light, true);
+        boolean bool = comp > 0 || headRender(stack, bufferSource, light, true, tickDelta);
 
         renderer.allowPivotParts = true;
         stack.popPose();
         return bool;
     }
 
-    public boolean headRender(PoseStack stack, MultiBufferSource bufferSource, int light, boolean useComplexity) {
+    public boolean headRender(PoseStack stack, MultiBufferSource bufferSource, int light, boolean useComplexity, float tickDelta) {
         if (renderer == null || !loaded)
             return false;
 
@@ -756,7 +754,7 @@ public class Avatar {
         // pre render
         renderer.setupRenderer(
                 PartFilterScheme.HEAD, bufferSource, stack,
-                1f, light, 1f, OverlayTexture.NO_OVERLAY,
+                tickDelta, light, 1f, OverlayTexture.NO_OVERLAY,
                 false, false
         );
 
@@ -764,10 +762,35 @@ public class Avatar {
         renderer.allowMatrixUpdate = false;
         renderer.ignoreVanillaVisibility = true;
 
+        // Clear stale vanilla head transforms — the skull/portrait PoseStack already
+        // has correct positioning, so leftover entity render data would double-apply
+        // rotation and offset, causing children (hair, ears) to detach from their pivots.
+        VanillaModelData.PartData headData = renderer.vanillaModelData.partMap.get(ParentType.Head);
+        FiguraVec3 savedPos = null, savedRot = null, savedScale = null;
+        Boolean savedVisible = null;
+        if (headData != null) {
+            savedPos = headData.pos.copy();
+            savedRot = headData.rot.copy();
+            savedScale = headData.scale.copy();
+            savedVisible = headData.visible;
+            headData.pos.set(0, 0, 0);
+            headData.rot.set(0, 0, 0);
+            headData.scale.set(1, 1, 1);
+            headData.visible = null;
+        }
+
         // render
         int comp = renderer.render();
         if (useComplexity)
             complexity.use(comp);
+
+        // Restore vanilla head data for subsequent entity renders
+        if (headData != null) {
+            headData.pos.set(savedPos);
+            headData.rot.set(savedRot);
+            headData.scale.set(savedScale);
+            headData.visible = savedVisible;
+        }
 
         // pos render
         renderer.allowMatrixUpdate = oldMat;
@@ -834,7 +857,7 @@ public class Avatar {
 
         // render
         int comp = renderer.renderSpecialParts();
-        boolean ret = comp > 0 || headRender(stack, buffer, light, false);
+        boolean ret = comp > 0 || headRender(stack, buffer, light, false, 1f);
 
         // after render
         stack.popPose();

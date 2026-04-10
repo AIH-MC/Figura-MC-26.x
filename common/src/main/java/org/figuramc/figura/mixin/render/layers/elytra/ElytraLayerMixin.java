@@ -1,37 +1,8 @@
 package org.figuramc.figura.mixin.render.layers.elytra;
 
-import com.llamalad7.mixinextras.sugar.Local;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.model.EntityModel;
-import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.model.object.equipment.ElytraModel;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.Sheets;
-import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.entity.RenderLayerParent;
-import net.minecraft.client.renderer.entity.layers.EquipmentLayerRenderer;
-import net.minecraft.client.renderer.entity.layers.RenderLayer;
-import net.minecraft.client.renderer.entity.layers.WingsLayer;
-import net.minecraft.client.renderer.entity.state.AvatarRenderState;
-import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
-import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.EquipmentClientInfo;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.Identifier;
-import net.minecraft.tags.ItemTags;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.DyedItemColor;
-import net.minecraft.world.item.equipment.EquipmentAsset;
-import net.minecraft.world.item.equipment.Equippable;
-import net.minecraft.world.item.equipment.trim.ArmorTrim;
+import java.util.List;
+import java.util.Optional;
+
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.avatar.AvatarManager;
 import org.figuramc.figura.ducks.FiguraEntityRenderStateExtension;
@@ -52,8 +23,38 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.List;
-import java.util.Optional;
+import com.llamalad7.mixinextras.sugar.Local;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.EntityModel;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.model.object.equipment.ElytraModel;
+import net.minecraft.client.renderer.Sheets;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.entity.RenderLayerParent;
+import net.minecraft.client.renderer.entity.layers.EquipmentLayerRenderer;
+import net.minecraft.client.renderer.entity.layers.RenderLayer;
+import net.minecraft.client.renderer.entity.layers.WingsLayer;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
+import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.EquipmentClientInfo;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.DyedItemColor;
+import net.minecraft.world.item.equipment.EquipmentAsset;
+import net.minecraft.world.item.equipment.Equippable;
+import net.minecraft.world.item.equipment.trim.ArmorTrim;
 
 @Mixin(WingsLayer.class)
 public abstract class ElytraLayerMixin<T extends LivingEntity, S extends HumanoidRenderState, M extends EntityModel<S>> extends RenderLayer<S, M> {
@@ -88,6 +89,11 @@ public abstract class ElytraLayerMixin<T extends LivingEntity, S extends Humanoi
         FiguraSubmitCallBackExtension submitCallBackExtension = (FiguraSubmitCallBackExtension) elytraModel;
         NodeCollectorExtension nodeCollectorExtension = (NodeCollectorExtension) submitNodeCollector;
 
+        // Copy PoseStack so the deferred callback has correct transforms (not a stale reference)
+        PoseStack capturedPose = new PoseStack();
+        capturedPose.pushPose();
+        capturedPose.last().set(pose.last());
+
         nodeCollectorExtension.submitFiguraModel(figura$avatar, humanoidRenderState, (avatar, renderState, multiBufferSource) -> {
             if (avatar.luaRuntime != null) {
                 VanillaPart part = avatar.luaRuntime.vanilla_model.ELYTRA;
@@ -100,7 +106,7 @@ public abstract class ElytraLayerMixin<T extends LivingEntity, S extends Humanoi
 
             Integer id = humanoidRenderState instanceof AvatarRenderState playerRenderState ? playerRenderState.id : ((FiguraEntityRenderStateExtension)humanoidRenderState).figura$getEntityId();
             if (id != null)
-                avatar.elytraRender(Minecraft.getInstance().level.getEntity(id), multiBufferSource, pose, light, ((FiguraEntityRenderStateExtension)humanoidRenderState).figura$getTickDelta(), elytraModel);
+                avatar.elytraRender(Minecraft.getInstance().level.getEntity(id), multiBufferSource, capturedPose, light, ((FiguraEntityRenderStateExtension)humanoidRenderState).figura$getTickDelta(), elytraModel);
 
             if (vanillaPart != null)
                 vanillaPart.restore(elytraModel);
@@ -135,6 +141,11 @@ public abstract class ElytraLayerMixin<T extends LivingEntity, S extends Humanoi
         submitElytraPivot(humanoidRenderState, poseStack, submitNodeCollector, light, elytraModel);
 
         if (renderedPivot) {
+            // Clear accumulated callbacks from onRender to prevent memory leak
+            // (vanilla rendering is cancelled, so these would never be consumed)
+            FiguraSubmitCallBackExtension ext = (FiguraSubmitCallBackExtension) elytraModel;
+            ext.figura$getPreRenderingCallbacks().clear();
+            ext.figura$getPostRenderingCallbacks().clear();
             poseStack.popPose();
             ci.cancel();
         }
@@ -150,9 +161,12 @@ public abstract class ElytraLayerMixin<T extends LivingEntity, S extends Humanoi
             // Try to render the pivot part
             Identifier playerTexture =  RenderUtils.getPlayerSkinTexture((WingsLayer<?, ?>) (Object)this, state);
 
+            boolean leftRendered = false;
+            boolean rightRendered = false;
+
             VanillaPart part = RenderUtils.pivotToPart(figura$Avatar, ParentType.LeftElytraPivot);
             if (part != null && part.checkVisible()) {
-                boolean leftWing = figura$Avatar.pivotPartRender(ParentType.LeftElytraPivot, stack -> {
+                leftRendered = figura$Avatar.pivotPartRender(ParentType.LeftElytraPivot, stack -> {
                         stack.pushPose();
                         stack.scale(16, 16, 16);
                         stack.mulPose(Axis.XP.rotationDegrees(180f));
@@ -161,15 +175,11 @@ public abstract class ElytraLayerMixin<T extends LivingEntity, S extends Humanoi
                         figura$submitElytraPart(elytraModel, state, ((ElytraModelAccessor)elytraModel).getLeftWing(), stack, nodeCollector, light, state.outlineColor, itemStack, playerTexture);
                         stack.popPose();
                 });
-                if (!leftWing) {
-                    figura$submitElytraPart(elytraModel, state, ((ElytraModelAccessor)elytraModel).getLeftWing(), poseStack, nodeCollector, light, state.outlineColor, itemStack, playerTexture);
-                }
             }
-
 
             part = RenderUtils.pivotToPart(figura$Avatar, ParentType.RightElytraPivot);
             if (part != null && part.checkVisible()) {
-                boolean rightWing = figura$Avatar.pivotPartRender(ParentType.RightElytraPivot, stack -> {
+                rightRendered = figura$Avatar.pivotPartRender(ParentType.RightElytraPivot, stack -> {
                     stack.pushPose();
                     stack.scale(16, 16, 16);
                     stack.mulPose(Axis.XP.rotationDegrees(180f));
@@ -178,9 +188,12 @@ public abstract class ElytraLayerMixin<T extends LivingEntity, S extends Humanoi
                     figura$submitElytraPart(elytraModel, state, ((ElytraModelAccessor)elytraModel).getRightWing(), stack, nodeCollector, light, state.outlineColor, itemStack, playerTexture);
                     stack.popPose();
                 });
-                if (!rightWing) {
-                    figura$submitElytraPart(elytraModel, state, ((ElytraModelAccessor)elytraModel).getRightWing(), poseStack, nodeCollector, light, state.outlineColor, itemStack, playerTexture);
-                }
+            }
+
+            // If no pivots rendered, let vanilla handle the elytra
+            // (same approach as CapeLayerMixin — vanilla renders with Figura callbacks from onRender)
+            if (!leftRendered && !rightRendered) {
+                renderedPivot = false;
             }
         } else renderedPivot = figura$Avatar != null && figura$Avatar.luaRuntime != null && figura$Avatar.permissions.get(Permissions.VANILLA_MODEL_EDIT) == 1 && !figura$Avatar.luaRuntime.vanilla_model.ELYTRA.checkVisible();
     }
@@ -188,6 +201,11 @@ public abstract class ElytraLayerMixin<T extends LivingEntity, S extends Humanoi
     // rewritten to work with mojang's shiny new layer system
     @Unique
     private void figura$submitElytraPart(ElytraModel elytraModel, S state, ModelPart modelPart, PoseStack poseStack, SubmitNodeCollector nodeCollector, int light, int outlineColor, ItemStack itemStack, @Nullable Identifier playerLocation) {
+        // Cancel the wing's own x/y/z position (ModelPart.translateAndRotate applies it at render time,
+        // but the pivot already places us at the correct world location — not applying this would double-count
+        // the wing's offset, shifting it ~5/16 blocks away from the intended pivot position).
+        poseStack.translate(-modelPart.x / 16f, -modelPart.y / 16f, -modelPart.z / 16f);
+
         boolean hasGlint = itemStack.hasFoil();
 
         EquipmentClientInfo.LayerType layerType = EquipmentClientInfo.LayerType.WINGS;

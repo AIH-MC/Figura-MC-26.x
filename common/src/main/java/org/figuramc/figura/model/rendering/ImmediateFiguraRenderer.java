@@ -69,6 +69,9 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
         // flag rendering state
         this.isRendering = true;
 
+        // Clear stale pivot data from previous frame's deferred render phase
+        for (var queue : pivotCustomizations.values()) queue.clear();
+
         // setup root customizations
         PartCustomization customization = setupRootCustomization(1.5d);
 
@@ -479,30 +482,30 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
         float j = (float)x2;
         float k = (float)y2;
         float l = (float)z2;
-        vertices.addVertex(pose, f, h, i).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, j, h, i).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, f, h, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F);
-        vertices.addVertex(pose, f, k, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F);
-        vertices.addVertex(pose, f, h, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F);
-        vertices.addVertex(pose, f, h, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F);
-        vertices.addVertex(pose, j, h, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F);
-        vertices.addVertex(pose, j, k, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F);
-        vertices.addVertex(pose, j, k, i).setColor(r, g, b, a).setNormal(pose, -1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, f, k, i).setColor(r, g, b, a).setNormal(pose, -1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, f, k, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F);
-        vertices.addVertex(pose, f, k, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F);
-        vertices.addVertex(pose, f, k, l).setColor(r, g, b, a).setNormal(pose, 0.0F, -1.0F, 0.0F);
-        vertices.addVertex(pose, f, h, l).setColor(r, g, b, a).setNormal(pose, 0.0F, -1.0F, 0.0F);
-        vertices.addVertex(pose, f, h, l).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, j, h, l).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, j, h, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, -1.0F);
-        vertices.addVertex(pose, j, h, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, -1.0F);
-        vertices.addVertex(pose, f, k, l).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, j, k, l).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, j, h, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F);
-        vertices.addVertex(pose, j, k, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F);
-        vertices.addVertex(pose, j, k, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F);
-        vertices.addVertex(pose, j, k, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F);
+        vertices.addVertex(pose, f, h, i).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, j, h, i).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, f, h, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, f, k, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, f, h, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, f, h, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, j, h, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, j, k, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, j, k, i).setColor(r, g, b, a).setNormal(pose, -1.0F, 0.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, f, k, i).setColor(r, g, b, a).setNormal(pose, -1.0F, 0.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, f, k, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, f, k, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, f, k, l).setColor(r, g, b, a).setNormal(pose, 0.0F, -1.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, f, h, l).setColor(r, g, b, a).setNormal(pose, 0.0F, -1.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, f, h, l).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, j, h, l).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, j, h, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, -1.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, j, h, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, -1.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, f, k, l).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, j, k, l).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, j, h, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, j, k, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, j, k, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F).setLineWidth(1.0F);
+        vertices.addVertex(pose, j, k, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F).setLineWidth(1.0F);
     }
 
     protected void savePivotTransform(ParentType parentType, PartCustomization customization) {
@@ -557,6 +560,17 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
             FiguraMod.popPushProfiler("worldMatrices");
             FiguraMat4 mat = partToWorldMatrices(custom);
             part.savedPartToWorldMat.set(mat);
+
+            // save pivot transforms so layers can consume them immediately
+            if (part.parentType.isPivot && allowPivotParts) {
+                FiguraMod.popPushProfiler("savePivotParts");
+                FiguraVec3 pivot = custom.getPivot().copy().add(custom.getOffsetPivot());
+                pivotOffsetter.setPos(pivot);
+                pivotOffsetter.recalculate();
+                customizationStack.push(pivotOffsetter);
+                savePivotTransform(part.parentType, customizationStack.peek());
+                customizationStack.pop();
+            }
         }
 
         // render children
