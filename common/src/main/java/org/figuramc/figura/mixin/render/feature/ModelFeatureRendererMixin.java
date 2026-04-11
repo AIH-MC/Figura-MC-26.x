@@ -49,6 +49,11 @@ public class ModelFeatureRendererMixin {
                 callback.run();
 
             callBackExtension.figura$getPostRenderingCallbacks().clear();
+
+            // Vanilla's renderModel does pushPose at the start and popPose at the end.
+            // Since ci.cancel() skips the rest of the method (including popPose),
+            // we must pop here to keep the PoseStack balanced.
+            poseStack.popPose();
         }
 
         callBackExtension.figura$getPreRenderingCallbacks().clear();
