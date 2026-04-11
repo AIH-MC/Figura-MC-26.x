@@ -29,7 +29,7 @@ public class GlyphStitcherMixin {
 
         int codePoint = EmojiCodePointHolder.pendingCodePoint;
         if (figura$isEmojiFont() && glyph != null && codePoint >= 0) {
-            ((BakedGlyphAccessor) glyph).figura$setupEmoji(Emojis.getCategoryByFont(texturePrefix), codePoint);
+            ((BakedGlyphAccessor) glyph).figura$setupEmoji(Emojis.getCategoryByFont(texturePrefix), codePoint, glyphBitmap.getPixelWidth());
         }
 
         return glyph;

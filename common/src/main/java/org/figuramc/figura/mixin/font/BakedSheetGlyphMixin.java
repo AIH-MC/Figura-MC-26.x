@@ -37,11 +37,14 @@ public abstract class BakedSheetGlyphMixin implements BakedGlyphAccessor {
     @Shadow @Final private float u1;
     @Unique
     EmojiMetadata figura$metadata;
+    @Unique
+    int figura$glyphPixelWidth;
 
     @Override
-    public void figura$setupEmoji(@Nullable EmojiContainer container, int codepoint) {
+    public void figura$setupEmoji(@Nullable EmojiContainer container, int codepoint, int glyphPixelWidth) {
         if (container != null) {
             figura$metadata = container.getLookup().getMetadata(codepoint);
+            figura$glyphPixelWidth = glyphPixelWidth;
         }
     }
 
@@ -56,7 +59,7 @@ public abstract class BakedSheetGlyphMixin implements BakedGlyphAccessor {
         float m = italic ? 1.0f - 0.25f * h : 0f;
         float n = italic ? 1.0f - 0.25f * j : 0f;
         float q = bold ? 0.1F : 0.0F;
-        float singleWidth = 8f / 256f;
+        float singleWidth = (u1 - u0) * 8f / figura$glyphPixelWidth;
         float shift = singleWidth * figura$metadata.getCurrentFrame();
 
         float u = u0 + shift;
