@@ -112,6 +112,10 @@ public abstract class SkullBlockRendererMixin implements BlockEntityRenderer<Sku
             if (eventCancelled || localAvatar.skullRender(stack, bufferSource, light, direction, yaw, tickDelta)) {
                 FiguraMod.popProfiler(5);
                 stack.popPose();
+                // Flush immediately so vertices are drawn with the current GL state.
+                // Without this, shader mods (Iris/Optifine) defer the draw to a later
+                // pass where ModelViewMat has changed, causing a ghost skull in the sky.
+                bufferSource.endBatch();
                 ci.cancel();
                 return;
             }
