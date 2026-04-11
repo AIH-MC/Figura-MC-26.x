@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class FiguraFeatureRenderer {
     public void render(SubmitNodeCollection submitNodeCollection, MultiBufferSource.BufferSource bufferSource) {
-        List<FiguraSubmission> figuraSubmissions = ((NodeCollectorExtension) submitNodeCollection).getFiguraSubmissions();
+        List<FiguraSubmission> figuraSubmissions = List.copyOf(((NodeCollectorExtension) submitNodeCollection).getFiguraSubmissions());
 
         for (FiguraSubmission figuraSubmission : figuraSubmissions) {
             if (figuraSubmission.avatar() == null)

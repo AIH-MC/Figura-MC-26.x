@@ -48,7 +48,7 @@ public abstract class CapeLayerMixin extends RenderLayer<AvatarRenderState, Play
     @Unique
     private Avatar avatar;
 
-    @Inject(method = "submit(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/client/renderer/entity/state/AvatarRenderState;FF)V", at = @At("HEAD"))
+    @Inject(method = "submit(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/client/renderer/entity/state/AvatarRenderState;FF)V", at = @At("HEAD"), cancellable = true)
     private void preRender(PoseStack pose, SubmitNodeCollector submitNodeCollector, int i, AvatarRenderState playerRenderState, float f, float g, CallbackInfo ci) {
         ItemStack itemStack = playerRenderState.chestEquipment;
         if (playerRenderState.isInvisible || itemStack.is(Items.ELYTRA))
@@ -140,8 +140,11 @@ public abstract class CapeLayerMixin extends RenderLayer<AvatarRenderState, Play
             }
 
             // Setup visibility for real cloak
-            if (RenderUtils.vanillaModelAndScript(avatar))
+            if (RenderUtils.vanillaModelAndScript(avatar)) {
                 avatar.luaRuntime.vanilla_model.CAPE.posTransform(model);
+                if (!avatar.luaRuntime.vanilla_model.CAPE.checkVisible())
+                    return false;
+            }
 
             return true;
         });
@@ -179,5 +182,14 @@ public abstract class CapeLayerMixin extends RenderLayer<AvatarRenderState, Play
 
             avatar = null;
         });
+
+        // Cancel vanilla cape rendering if cape visibility is set to false
+        if (RenderUtils.vanillaModelAndScript(avatar) && !avatar.luaRuntime.vanilla_model.CAPE.checkVisible()) {
+            // Clear the callbacks since vanilla won't run them
+            submitCallBackExtension.figura$getPreRenderingCallbacks().clear();
+            submitCallBackExtension.figura$getPostRenderingCallbacks().clear();
+            avatar = null;
+            ci.cancel();
+        }
     }
 }

@@ -131,8 +131,10 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, S extend
 
         M model = getModel();
         
+        // Always update matrices so pivot transforms are available for layers
+        localAvatar.updateMatrices(model, poseStack);
+
         if (Avatar.firstPerson) {
-            localAvatar.updateMatrices(model, poseStack);
             currentAvatar = null;
             lastPose = null;
             poseStack.popPose();
