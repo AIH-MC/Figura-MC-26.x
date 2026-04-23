@@ -484,30 +484,23 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
         float j = (float)x2;
         float k = (float)y2;
         float l = (float)z2;
-        vertices.addVertex(pose, f, h, i).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, j, h, i).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, f, h, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F);
-        vertices.addVertex(pose, f, k, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F);
-        vertices.addVertex(pose, f, h, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F);
-        vertices.addVertex(pose, f, h, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F);
-        vertices.addVertex(pose, j, h, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F);
-        vertices.addVertex(pose, j, k, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F);
-        vertices.addVertex(pose, j, k, i).setColor(r, g, b, a).setNormal(pose, -1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, f, k, i).setColor(r, g, b, a).setNormal(pose, -1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, f, k, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F);
-        vertices.addVertex(pose, f, k, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F);
-        vertices.addVertex(pose, f, k, l).setColor(r, g, b, a).setNormal(pose, 0.0F, -1.0F, 0.0F);
-        vertices.addVertex(pose, f, h, l).setColor(r, g, b, a).setNormal(pose, 0.0F, -1.0F, 0.0F);
-        vertices.addVertex(pose, f, h, l).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, j, h, l).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, j, h, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, -1.0F);
-        vertices.addVertex(pose, j, h, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, -1.0F);
-        vertices.addVertex(pose, f, k, l).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, j, k, l).setColor(r, g, b, a).setNormal(pose, 1.0F, 0.0F, 0.0F);
-        vertices.addVertex(pose, j, h, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F);
-        vertices.addVertex(pose, j, k, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 1.0F, 0.0F);
-        vertices.addVertex(pose, j, k, i).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F);
-        vertices.addVertex(pose, j, k, l).setColor(r, g, b, a).setNormal(pose, 0.0F, 0.0F, 1.0F);
+        line(vertices, pose, f, h, i, j, h, i, r, g, b, a, 1, 0, 0);
+        line(vertices, pose, f, h, i, f, k, i, r, g, b, a, 0, 1, 0);
+        line(vertices, pose, f, h, i, f, h, l, r, g, b, a, 0, 0, 1);
+        line(vertices, pose, j, h, i, j, k, i, r, g, b, a, 0, 1, 0);
+        line(vertices, pose, j, k, i, f, k, i, r, g, b, a, -1, 0, 0);
+        line(vertices, pose, f, k, i, f, k, l, r, g, b, a, 0, 0, 1);
+        line(vertices, pose, f, k, l, f, h, l, r, g, b, a, 0, -1, 0);
+        line(vertices, pose, f, h, l, j, h, l, r, g, b, a, 1, 0, 0);
+        line(vertices, pose, j, h, l, j, h, i, r, g, b, a, 0, 0, -1);
+        line(vertices, pose, f, k, l, j, k, l, r, g, b, a, 1, 0, 0);
+        line(vertices, pose, j, h, l, j, k, l, r, g, b, a, 0, 1, 0);
+        line(vertices, pose, j, k, i, j, k, l, r, g, b, a, 0, 0, 1);
+    }
+
+    private static void line(VertexConsumer v, PoseStack.Pose pose, float x1, float y1, float z1, float x2, float y2, float z2, float r, float g, float b, float a, float nx, float ny, float nz) {
+        v.addVertex(pose, x1, y1, z1).setColor(r, g, b, a).setNormal(pose, nx, ny, nz).setLineWidth(1.0f);
+        v.addVertex(pose, x2, y2, z2).setColor(r, g, b, a).setNormal(pose, nx, ny, nz).setLineWidth(1.0f);
     }
 
     protected void savePivotTransform(ParentType parentType, PartCustomization customization) {
