@@ -1,6 +1,7 @@
 package org.figuramc.figura.model.rendertasks;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.QuadInstance;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -20,7 +21,6 @@ import org.figuramc.figura.lua.docs.LuaMethodOverload;
 import org.figuramc.figura.lua.docs.LuaTypeDoc;
 import org.figuramc.figura.model.FiguraModelPart;
 import org.figuramc.figura.utils.LuaUtils;
-import org.joml.Vector3fc;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,12 +39,18 @@ public class BlockTask extends RenderTask {
         super(name, owner, parent);
     }
 
+    private final QuadInstance quadInstance = new QuadInstance();
+
     @Override
     public void render(PoseStack poseStack, MultiBufferSource buffer, int light, int overlay) {
         poseStack.scale(16, 16, 16);
 
         int newLight = this.customization.light != null ? this.customization.light : light;
         int newOverlay = this.customization.overlay != null ? this.customization.overlay : overlay;
+
+        quadInstance.setLightCoords(newLight);
+        quadInstance.setOverlayCoords(newOverlay);
+        quadInstance.setColor(-1);
 
         BlockStateModelSet modelSet = Minecraft.getInstance().getModelManager().getBlockStateModelSet();
         BlockStateModel model = modelSet.get(block);
@@ -69,33 +75,14 @@ public class BlockTask extends RenderTask {
             VertexConsumer consumer = buffer.getBuffer(renderType);
             PoseStack.Pose pose = poseStack.last();
 
-            // Render nulldirection quads (non-face-culled)
             for (BakedQuad quad : part.getQuads(null)) {
-                renderQuad(consumer, pose, quad, newLight, newOverlay);
+                consumer.putBakedQuad(pose, quad, quadInstance);
             }
-            // Render directional quads
             for (Direction dir : Direction.values()) {
                 for (BakedQuad quad : part.getQuads(dir)) {
-                    renderQuad(consumer, pose, quad, newLight, newOverlay);
+                    consumer.putBakedQuad(pose, quad, quadInstance);
                 }
             }
-        }
-    }
-
-    private static void renderQuad(VertexConsumer consumer, PoseStack.Pose pose, BakedQuad quad, int light, int overlay) {
-        int color = quad.materialInfo().isTinted() ? -1 : -1; // white tint
-        for (int i = 0; i < 4; i++) {
-            Vector3fc pos = quad.position(i);
-            long packedUV = quad.packedUV(i);
-            float u = Float.intBitsToFloat((int) packedUV);
-            float v = Float.intBitsToFloat((int) (packedUV >>> 32));
-            Direction dir = quad.direction();
-            consumer.addVertex(pose, pos.x(), pos.y(), pos.z())
-                    .setColor(color)
-                    .setUv(u, v)
-                    .setOverlay(overlay)
-                    .setLight(light)
-                    .setNormal(pose, dir.getStepX(), dir.getStepY(), dir.getStepZ());
         }
     }
 

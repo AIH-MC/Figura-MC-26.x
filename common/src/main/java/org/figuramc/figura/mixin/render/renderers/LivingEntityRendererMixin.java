@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
+import net.minecraft.client.resources.model.cuboid.ItemTransform;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -22,12 +23,15 @@ import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.avatar.AvatarManager;
 import org.figuramc.figura.config.Configs;
 import org.figuramc.figura.ducks.FiguraEntityRenderStateExtension;
+import org.figuramc.figura.ducks.FiguraItemStackRenderStateExtension;
 import org.figuramc.figura.ducks.FiguraSubmitCallBackExtension;
 import org.figuramc.figura.ducks.LivingEntityRendererAccessor;
 import org.figuramc.figura.ducks.NodeCollectorExtension;
 import org.figuramc.figura.gui.PopupMenu;
 import org.figuramc.figura.lua.api.vanilla_model.VanillaPart;
+import org.figuramc.figura.lua.api.world.ItemStackAPI;
 import org.figuramc.figura.math.matrix.FiguraMat4;
+import org.figuramc.figura.math.vector.FiguraVec3;
 import org.figuramc.figura.model.rendering.PartFilterScheme;
 import org.figuramc.figura.permissions.Permissions;
 import org.figuramc.figura.utils.RenderUtils;
@@ -212,7 +216,19 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, S extend
                         final float s = 16f;
                         stack.scale(s, s, s);
                         stack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(-90f));
-                        deferredItem.renderState().submit(stack, deferredItem.submitNodeCollector(), deferredItem.light(), net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, deferredItem.outlineColor());
+
+                        var ext = (FiguraItemStackRenderStateExtension) deferredItem.renderState();
+                        ItemTransform transform = ext.figura$getItemTransform();
+
+                        if (avatar == null || !avatar.itemRenderEventDirect(
+                                ItemStackAPI.verify(ext.figura$getItemStack()),
+                                ext.figura$getDisplayContext().name(),
+                                FiguraVec3.fromVec3f(transform.translation()),
+                                FiguraVec3.of(transform.rotation().z(), transform.rotation().y(), transform.rotation().x()),
+                                FiguraVec3.fromVec3f(transform.scale()),
+                                ext.figura$isLeftHanded(),
+                                stack, bufferSource, deferredItem.light(), net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY))
+                            deferredItem.renderState().submit(stack, deferredItem.submitNodeCollector(), deferredItem.light(), net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, deferredItem.outlineColor());
                     });
                 }
                 localRenderer.deferredItems.clear();
