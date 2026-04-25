@@ -461,6 +461,33 @@ public class Avatar {
         return rendered;
     }
 
+    public boolean itemRenderEventDirect(ItemStackAPI item, String mode, FiguraVec3 pos, FiguraVec3 rot, FiguraVec3 scale, boolean leftHanded, PoseStack stack, MultiBufferSource bufferSource, int light, int overlay) {
+        if (!loaded || renderer == null || !renderer.interceptRendersIntoFigura) {
+            return false;
+        }
+        Varargs result = run("ITEM_RENDER", render, item, mode, pos, rot, scale, leftHanded);
+
+        if(result == null)
+            return false;
+        PoseStack copy = new PoseStack();
+        copy.pushPose();
+        copy.last().set(stack.last());
+
+        boolean rendered = false;
+        for (int i = 1; i <= result.narg(); i++) {
+            if (result.arg(i).isuserdata(FiguraModelPart.class)) {
+                FiguraModelPart modelPart = (FiguraModelPart) result.arg(i).checkuserdata(FiguraModelPart.class);
+
+                boolean renderedPart = figuraItemRendered(modelPart);
+                rendered |= renderedPart;
+                if (renderedPart) {
+                    renderItem(copy, bufferSource, modelPart, light, overlay);
+                }
+            }
+        }
+        return rendered;
+    }
+
     public boolean playSoundEvent(String id, FiguraVec3 pos, float vol, float pitch, boolean loop, String category, String file) {
         Varargs result = null;
         if (loaded) result = run("ON_PLAY_SOUND", tick, id, pos, vol, pitch, loop, category, file);
