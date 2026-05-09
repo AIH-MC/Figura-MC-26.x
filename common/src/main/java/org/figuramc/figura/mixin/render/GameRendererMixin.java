@@ -25,6 +25,7 @@ import org.figuramc.figura.FiguraMod;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.avatar.AvatarManager;
 import org.figuramc.figura.ducks.GameRendererAccessor;
+import org.figuramc.figura.gui.FiguraGuiRenderer;
 import org.figuramc.figura.gui.FiguraPortraitRenderer;
 import org.figuramc.figura.lua.api.ClientAPI;
 import org.figuramc.figura.math.matrix.FiguraMat4;
@@ -167,6 +168,7 @@ public abstract class GameRendererMixin implements GameRendererAccessor {
     private List<PictureInPictureRenderer<?>> addPortraitRenderer(List<PictureInPictureRenderer<?>> list, @Local MultiBufferSource.BufferSource source) {
         List<PictureInPictureRenderer<?>> newList = new ArrayList<>(list);
         newList.add(new FiguraPortraitRenderer(source));
+        newList.add(new FiguraGuiRenderer(source));
         return newList;
     }
 
