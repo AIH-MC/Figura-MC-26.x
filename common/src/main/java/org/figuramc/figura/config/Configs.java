@@ -18,6 +18,7 @@ import org.figuramc.figura.permissions.Permissions;
 import org.figuramc.figura.resources.FiguraRuntimeResources;
 import org.figuramc.figura.utils.ColorUtils;
 import org.figuramc.figura.utils.FiguraText;
+import org.figuramc.figura.utils.PlatformUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -140,7 +141,7 @@ public class Configs {
             }};
     public static final ConfigType.BoolConfig
             ALLOW_FP_HANDS = new ConfigType.BoolConfig("allow_fp_hands", RENDERING, false),
-            FIRST_PERSON_MATRICES = new ConfigType.BoolConfig("first_person_matrices", RENDERING, true),
+            FIRST_PERSON_MATRICES = new ConfigType.BoolConfig("first_person_matrices", RENDERING, !PlatformUtils.isModLoaded("yes_steve_model")),
             INVENTORY_SCISSOR = new ConfigType.BoolConfig("inventory_scissor", RENDERING, true),
             RENDER_STATS = new ConfigType.BoolConfig("render_stats", RENDERING, true, false);
 
