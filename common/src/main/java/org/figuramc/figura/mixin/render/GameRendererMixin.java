@@ -1,4 +1,5 @@
 package org.figuramc.figura.mixin.render;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -13,7 +14,6 @@ import net.minecraft.client.gui.render.GuiRenderer;
 import net.minecraft.client.gui.render.pip.PictureInPictureRenderer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelTargetBundle;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.client.renderer.state.GameRenderState;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
@@ -52,8 +52,6 @@ public abstract class GameRendererMixin implements GameRendererAccessor {
 
     @Shadow public abstract void checkEntityPostEffect(Entity entity);
 
-    @Shadow public abstract Minecraft getMinecraft();
-
     @Shadow @Final private Camera mainCamera;
     @Shadow @Nullable
     private Identifier postEffectId;
@@ -63,6 +61,7 @@ public abstract class GameRendererMixin implements GameRendererAccessor {
     @Shadow private float spinningEffectSpeed;
     @Shadow @Final private GuiRenderer guiRenderer;
     @Shadow @Final private GameRenderState gameRenderState;
+    @Shadow @Final private net.minecraft.client.renderer.SubmitNodeStorage handAndScreenSubmitNodeStorage;
 
     @Shadow abstract void bobHurt(CameraRenderState cameraRenderState, PoseStack poseStack);
     @Shadow abstract void bobView(CameraRenderState cameraRenderState, PoseStack poseStack);
@@ -132,7 +131,7 @@ public abstract class GameRendererMixin implements GameRendererAccessor {
             if (this.postEffectId == null || !this.postEffectId.equals(resource)) {
                 PostChain postchain = this.minecraft.getShaderManager().getPostChain(resource, LevelTargetBundle.MAIN_TARGETS);
                 if (postchain != null)
-                    postchain.process(this.minecraft.getMainRenderTarget(), this.resourcePool);
+                    postchain.process(this.minecraft.gameRenderer.mainRenderTarget(), this.resourcePool);
             }
         } catch (Exception ignored) {
             this.effectActive = false;
@@ -162,13 +161,13 @@ public abstract class GameRendererMixin implements GameRendererAccessor {
         return stack;
     }
 
-    @ModifyArg(method = "<init>", index = 4,
+    @ModifyArg(method = "<init>", index = 2,
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/render/GuiRenderer;<init>(Lnet/minecraft/client/renderer/state/gui/GuiRenderState;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/feature/FeatureRenderDispatcher;Ljava/util/List;)V"))
-    private List<PictureInPictureRenderer<?>> addPortraitRenderer(List<PictureInPictureRenderer<?>> list, @Local MultiBufferSource.BufferSource source) {
+                    target = "Lnet/minecraft/client/gui/render/GuiRenderer;<init>(Lnet/minecraft/client/renderer/state/gui/GuiRenderState;Lnet/minecraft/client/renderer/feature/FeatureRenderDispatcher;Ljava/util/List;)V"))
+    private List<PictureInPictureRenderer<?>> addPortraitRenderer(List<PictureInPictureRenderer<?>> list) {
         List<PictureInPictureRenderer<?>> newList = new ArrayList<>(list);
-        newList.add(new FiguraPortraitRenderer(source));
-        newList.add(new FiguraGuiRenderer(source));
+        newList.add(new FiguraPortraitRenderer());
+        newList.add(new FiguraGuiRenderer());
         return newList;
     }
 
@@ -193,5 +192,10 @@ public abstract class GameRendererMixin implements GameRendererAccessor {
     @Override
     public GuiRenderer figura$getGuiRenderer() {
         return guiRenderer;
+    }
+
+    @Override
+    public net.minecraft.client.renderer.SubmitNodeStorage figura$getHandAndScreenSubmitNodeStorage() {
+        return handAndScreenSubmitNodeStorage;
     }
 }

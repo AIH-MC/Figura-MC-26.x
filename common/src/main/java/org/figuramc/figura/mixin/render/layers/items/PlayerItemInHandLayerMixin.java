@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.ArmedModel;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.HeadedModel;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.resources.model.cuboid.ItemTransform;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
@@ -71,7 +70,7 @@ public abstract class PlayerItemInHandLayerMixin <S extends AvatarRenderState, M
             stack.translate(0, 0, 7 / 16f);
             ItemTransform transform = ((FiguraItemStackRenderStateExtension)itemStackRenderState).figura$getItemTransform();
             NodeCollectorExtension nodeCollectorExtension = (NodeCollectorExtension) submitNodeCollector;
-            nodeCollectorExtension.submitFiguraModel(av, avatarRenderState, (avatar, entityState, multibufferSource) -> {
+            nodeCollectorExtension.submitFiguraModel(av, avatarRenderState, (avatar, entityState, SubmitNodeCollector) -> {
                 if (!avatar.itemRenderEvent(ItemStackAPI.verify(((FiguraItemStackRenderStateExtension)itemStackRenderState).figura$getItemStack()), ((FiguraItemStackRenderStateExtension)itemStackRenderState).figura$getDisplayContext().name(), FiguraVec3.fromVec3f(transform.translation()), FiguraVec3.of(transform.rotation().z(), transform.rotation().y(), transform.rotation().x()), FiguraVec3.fromVec3f(transform.scale()), ((FiguraItemStackRenderStateExtension) itemStackRenderState).figura$isLeftHanded(), stack, submitNodeCollector, light, OverlayTexture.NO_OVERLAY))
                     itemStackRenderState.submit(stack, submitNodeCollector, light, OverlayTexture.NO_OVERLAY, entityState.outlineColor);
 

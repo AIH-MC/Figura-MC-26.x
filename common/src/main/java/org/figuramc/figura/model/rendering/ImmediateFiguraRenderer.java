@@ -1,4 +1,5 @@
 package org.figuramc.figura.model.rendering;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -68,7 +69,7 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
     @Override
     public void updateMatrices() {
         // flag rendering state
-        this.isRendering = true;
+        beginRender();
 
         // clear old pivot customizations so calculatePartMatrices can populate fresh ones
         for (var queue : pivotCustomizations.values())
@@ -90,7 +91,7 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
         customizationStack.pop();
         checkEmpty();
 
-        this.isRendering = false;
+        endRender();
     }
 
     public int getComplexity() {
@@ -119,7 +120,7 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
 
     protected int commonRender(double vertOffset) {
         // flag rendering state
-        this.isRendering = true;
+        beginRender();
 
         // iris fix
         int irisConfig = UIHelper.paperdoll || !ClientAPI.hasShaderPackMod() ? 0 : Configs.IRIS_COMPATIBILITY_FIX.value;
@@ -190,18 +191,16 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
             // push vertices to vertex consumer
             FiguraMod.pushProfiler("draw");
             FiguraMod.pushProfiler("primary");
-            VERTEX_BUFFER.consume(true, bufferSource);
+            VERTEX_BUFFER.consume(true, submitNodeCollector, currentPoseStack);
             FiguraMod.popPushProfiler("secondary");
-            VERTEX_BUFFER.consume(false, bufferSource);
+            VERTEX_BUFFER.consume(false, submitNodeCollector, currentPoseStack);
             FiguraMod.popProfiler(2);
 
             // finish rendering
             checkEmpty();
         }
 
-        this.isRendering = false;
-        if (this.dirty)
-            clean();
+        endRender();
 
         return prev - Math.max(remainingComplexity[0], 0);
     }
@@ -365,13 +364,14 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
                     int overlay = peek.overlay;
                     interceptRendersIntoFigura = false;
                     for (RenderTask task : part.renderTasks.values()) {
-                        if (!task.shouldRender())
+                        boolean shouldRender = task.shouldRender();
+                        if (!shouldRender)
                             continue;
                         int neededComplexity = task.getComplexity();
                         if (neededComplexity > remainingComplexity[0])
                             break;
                         FiguraMod.pushProfiler(task.getName());
-                        task.render(customizationStack, bufferSource, light, overlay);
+                        task.render(customizationStack, submitNodeCollector, light, overlay);
                         remainingComplexity[0] -= neededComplexity;
                         FiguraMod.popProfiler();
                     }
@@ -471,10 +471,15 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
 
         PoseStack stack = customization.copyIntoGlobalPoseStack();
 
-        renderLineBox(stack.last(), bufferSource.getBuffer(RenderTypes.LINES),
-                -boxSize, -boxSize, -boxSize,
-                boxSize, boxSize, boxSize,
-                (float) color.x, (float) color.y, (float) color.z, 1f);
+        if (submitNodeCollector != null) {
+            final double bs = boxSize;
+            final FiguraVec3 col = color;
+            submitNodeCollector.submitCustomGeometry(stack, RenderTypes.LINES, (pose, vc) ->
+                renderLineBox(pose, vc,
+                        -bs, -bs, -bs,
+                        bs, bs, bs,
+                        (float) col.x, (float) col.y, (float) col.z, 1f));
+        }
     }
 
     public static void renderLineBox(PoseStack.Pose pose, VertexConsumer vertices, double x1, double y1, double z1, double x2, double y2, double z2, float r, float g, float b, float a) {
@@ -707,13 +712,15 @@ public class ImmediateFiguraRenderer extends FiguraRenderer {
             list.add(consumer);
         }
 
-        public void consume(boolean primary, MultiBufferSource bufferSource) {
+        public void consume(boolean primary, net.minecraft.client.renderer.SubmitNodeCollector submitNodeCollector, com.mojang.blaze3d.vertex.PoseStack poseStack) {
+            if (submitNodeCollector == null || poseStack == null) return;
             HashMap<RenderType, List<Consumer<VertexConsumer>>> map = primary ? primaryBuffers : secondaryBuffers;
             for (Map.Entry<RenderType, List<Consumer<VertexConsumer>>> entry : map.entrySet()) {
-                VertexConsumer vertexConsumer = bufferSource.getBuffer(entry.getKey());
-                List<Consumer<VertexConsumer>> consumers = entry.getValue();
-                for (Consumer<VertexConsumer> consumer : consumers)
-                    consumer.accept(vertexConsumer);
+                List<Consumer<VertexConsumer>> consumers = new java.util.ArrayList<>(entry.getValue());
+                submitNodeCollector.submitCustomGeometry(poseStack, entry.getKey(), (pose, vertexConsumer) -> {
+                    for (Consumer<VertexConsumer> consumer : consumers)
+                        consumer.accept(vertexConsumer);
+                });
             }
             map.clear();
         }

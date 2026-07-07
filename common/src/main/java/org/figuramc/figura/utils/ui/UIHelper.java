@@ -62,7 +62,6 @@ import org.figuramc.figura.math.vector.FiguraVec4;
 import org.figuramc.figura.mixin.font.FontAccessor;
 import org.figuramc.figura.mixin.font.FontSet$SourceAccessor;
 import org.figuramc.figura.mixin.gui.GuiGraphicsAccessor;
-import org.figuramc.figura.mixin.gui.GuiRendererAccessor;
 import org.figuramc.figura.model.rendering.EntityRenderMode;
 import org.figuramc.figura.utils.FiguraIdentifier;
 import org.figuramc.figura.utils.RenderUtils;
@@ -151,7 +150,7 @@ public final class UIHelper {
             return;
 
         GpuDevice gpuDevice = RenderSystem.getDevice();
-        int paddedSize = Mth.roundToward(Lighting.UBO_SIZE, gpuDevice.getUniformOffsetAlignment());
+        int paddedSize = Mth.roundToward(Lighting.UBO_SIZE, gpuDevice.getDeviceInfo().limits().minUniformOffsetAlignment());
         buffer = gpuDevice.createBuffer(() -> "Figura Lighting UBO", 136, paddedSize);
         Vector3f lighting0 = Util.make(new Vector3f(-0.2f, -1f, 1f), Vector3f::normalize);
         Vector3f lighting1 = Util.make(new Vector3f(-0.2f, 0.4f, 0.3f), Vector3f::normalize);
@@ -197,7 +196,7 @@ public final class UIHelper {
                 }
 
                 // lightning
-                Minecraft.getInstance().gameRenderer.getLighting().setupFor(Lighting.Entry.ENTITY_IN_UI);
+                Minecraft.getInstance().gameRenderer.lighting().setupFor(Lighting.Entry.ENTITY_IN_UI);
 
                 // invisibility
                 if (Configs.PAPERDOLL_INVISIBLE.value)
@@ -232,7 +231,7 @@ public final class UIHelper {
                 entity.yHeadRot = -yaw + bodyY;
 
                 // lightning
-                Minecraft.getInstance().gameRenderer.getLighting().setupFor(Lighting.Entry.ENTITY_IN_UI);
+                Minecraft.getInstance().gameRenderer.lighting().setupFor(Lighting.Entry.ENTITY_IN_UI);
             }
         }
 
@@ -290,7 +289,7 @@ public final class UIHelper {
 
         // pop matrix
         pose.popMatrix();
-        Minecraft.getInstance().gameRenderer.getLighting().setupFor(Lighting.Entry.ITEMS_3D);
+        Minecraft.getInstance().gameRenderer.lighting().setupFor(Lighting.Entry.ITEMS_3D);
 
         // restore entity data
         entity.setXRot(headX);
@@ -299,7 +298,7 @@ public final class UIHelper {
     }
 
     public static void enableBlend() {
-        GlStateManager._enableBlend();
+        GlStateManager._enableBlend(0);
         GlStateManager._blendFuncSeparate(770, 771, 1, 0);
     }
 
@@ -433,7 +432,7 @@ public final class UIHelper {
     public static void highlight(GuiGraphicsExtractor gui, FiguraWidget widget, Component text) {
         // screen
         int screenW, screenH;
-        if (Minecraft.getInstance().screen instanceof AbstractPanelScreen panel) {
+        if (Minecraft.getInstance().gui.screen() instanceof AbstractPanelScreen panel) {
             screenW = panel.width;
             screenH = panel.height;
         } else {
@@ -617,9 +616,9 @@ public final class UIHelper {
 
     public static Runnable openURL(String url) {
         Minecraft minecraft = Minecraft.getInstance();
-        return () -> minecraft.setScreen(new FiguraConfirmScreen.FiguraConfirmLinkScreen((bl) -> {
+        return () -> minecraft.gui.setScreen(new FiguraConfirmScreen.FiguraConfirmLinkScreen((bl) -> {
             if (bl) Util.getPlatform().openUri(url);
-        }, url, minecraft.screen));
+        }, url, minecraft.gui.screen()));
     }
 
     public static void renderLoading(GuiGraphicsExtractor gui, int x, int y) {
@@ -629,18 +628,18 @@ public final class UIHelper {
     }
 
     public static void setContext(ContextMenu context) {
-        if (Minecraft.getInstance().screen instanceof AbstractPanelScreen panelScreen)
+        if (Minecraft.getInstance().gui.screen() instanceof AbstractPanelScreen panelScreen)
             panelScreen.contextMenu = context;
     }
 
     public static ContextMenu getContext() {
-        if (Minecraft.getInstance().screen instanceof AbstractPanelScreen panelScreen)
+        if (Minecraft.getInstance().gui.screen() instanceof AbstractPanelScreen panelScreen)
             return panelScreen.contextMenu;
         return null;
     }
 
     public static void setTooltip(Component text) {
-        if (Minecraft.getInstance().screen instanceof AbstractPanelScreen panelScreen)
+        if (Minecraft.getInstance().gui.screen() instanceof AbstractPanelScreen panelScreen)
             panelScreen.tooltip = text;
     }
 
@@ -662,10 +661,16 @@ public final class UIHelper {
     public static class OutlinedGuiTextRenderState extends GuiTextRenderState {
         public OutlinedGuiTextRenderState(Font font, FormattedCharSequence formattedCharSequence, Matrix3x2f matrix3x2f, int x, int y, int color, int outlineColor, @Nullable ScreenRectangle screenRectangle) {
             super(font, formattedCharSequence, matrix3x2f, x, y, color, 0, false, false, screenRectangle);
+            this.figura$font = font;
+            this.figura$x = x;
+            this.figura$y = y;
             this.formattedCharSequence = formattedCharSequence;
             this.outlineColor = outlineColor;
         }
 
+        private final Font figura$font;
+        private final int figura$x;
+        private final int figura$y;
         private final int outlineColor;
         private final FormattedCharSequence formattedCharSequence;
         private Font.PreparedText preparedText;
@@ -674,20 +679,20 @@ public final class UIHelper {
         @Override
         public Font.PreparedText ensurePrepared() {
             if (this.preparedText == null) {
-                Font.PreparedTextBuilder preparedTextBuilder = font.new PreparedTextBuilder(0, 0, outlineColor, false, false);
+                Font.PreparedTextBuilder preparedTextBuilder = figura$font.new PreparedTextBuilder(0, 0, outlineColor, false, false);
 
                 for (int l = -1; l <= 1; l++) {
                     for (int m = -1; m <= 1; m++) {
                         if (l != 0 || m != 0) {
-                            float[] fs = new float[]{x};
+                            float[] fs = new float[]{figura$x};
                             int n = l;
                             int o = m;
                             formattedCharSequence.accept((lx, style, mx) -> {
                                 boolean bl = style.isBold();
-                                GlyphSource fontSet = ((FontAccessor) font).figura$getFontSet(style.getFont());
+                                GlyphSource fontSet = ((FontAccessor) figura$font).figura$getFontSet(style.getFont());
                                 GlyphInfo glyphInfo = fontSet.getGlyph(mx).info();
                                 preparedTextBuilder.x = fs[0] + n * glyphInfo.getShadowOffset();
-                                preparedTextBuilder.y = y + o * glyphInfo.getShadowOffset();
+                                preparedTextBuilder.y = figura$y + o * glyphInfo.getShadowOffset();
                                 fs[0] += glyphInfo.getAdvance(bl);
                                 return preparedTextBuilder.accept(lx, style.withColor(outlineColor), mx);
                             });

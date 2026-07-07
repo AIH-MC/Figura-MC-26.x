@@ -227,7 +227,7 @@ public class ContextMenu extends AbstractContainerElement {
         @Override
         public void extractContents(GuiGraphicsExtractor gui, int mouseX, int mouseY, float delta) {
             // draw line
-            gui.fill(this.getX() + 4, getY() + 4, this.getX() + this.getWidth() - 4, getY() + 5, 0xFF000000 + ChatFormatting.DARK_GRAY.getColor());
+            gui.fill(this.getX() + 4, getY() + 4, this.getX() + this.getWidth() - 4, getY() + 5, 0xFF000000 + org.figuramc.figura.utils.ColorUtils.getLegacyColor(ChatFormatting.DARK_GRAY));
         }
 
         @Override

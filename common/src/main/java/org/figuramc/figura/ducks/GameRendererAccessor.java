@@ -8,4 +8,6 @@ public interface GameRendererAccessor {
     double figura$getFov(Camera camera, float tickDelta, boolean changingFov);
 
     GuiRenderer figura$getGuiRenderer();
+
+    net.minecraft.client.renderer.SubmitNodeStorage figura$getHandAndScreenSubmitNodeStorage();
 }

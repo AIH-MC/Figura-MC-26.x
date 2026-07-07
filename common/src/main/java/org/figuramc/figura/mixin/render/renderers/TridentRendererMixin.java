@@ -3,7 +3,6 @@ package org.figuramc.figura.mixin.render.renderers;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.object.projectile.TridentModel;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.ThrownTridentRenderer;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -70,7 +69,7 @@ public abstract class TridentRendererMixin<T extends ThrownTrident, S extends Th
             boolean bool = avatar.tridentRenderEvent(tickDelta, EntityAPI.wrap(trident));
 
             FiguraMod.popPushProfiler("render");
-            if (bool || avatar.renderTrident(poseStack, bufferSource, tickDelta, thrownTridentRenderState.lightCoords)) {
+            if (bool || avatar.renderTrident(poseStack, submitNodeCollector, tickDelta, thrownTridentRenderState.lightCoords)) {
                 poseStack.popPose();
                 return false;
             }

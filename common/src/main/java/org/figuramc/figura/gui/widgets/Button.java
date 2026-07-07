@@ -127,7 +127,7 @@ public class Button extends net.minecraft.client.gui.components.Button implement
     }
 
     protected int getTextColor() {
-        return (!this.isActive() ? ChatFormatting.DARK_GRAY : ChatFormatting.WHITE).getColor();
+        return org.figuramc.figura.utils.ColorUtils.getLegacyColor(!this.isActive() ? ChatFormatting.DARK_GRAY : ChatFormatting.WHITE);
     }
 
     public void setTooltip(Component tooltip) {

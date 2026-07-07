@@ -22,11 +22,11 @@ public class KeybindWidgetHelper {
         // conflict bars
         if (vanillaConflict || avatarConflict) {
             if (avatarConflict) {
-                gui.fill(x, y, x + width, y + height, ChatFormatting.YELLOW.getColor() | 0xFF000000);
+                gui.fill(x, y, x + width, y + height, org.figuramc.figura.utils.ColorUtils.getLegacyColor(ChatFormatting.YELLOW) | 0xFF000000);
                 x -= width + 4;
             }
             if (vanillaConflict) {
-                gui.fill(x, y, x + width, y + height, ChatFormatting.RED.getColor() | 0xFF000000);
+                gui.fill(x, y, x + width, y + height, org.figuramc.figura.utils.ColorUtils.getLegacyColor(ChatFormatting.RED) | 0xFF000000);
             }
         }
     }

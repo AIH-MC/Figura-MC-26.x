@@ -60,12 +60,12 @@ public class TextureCustomization {
             int height = atlasAccessor.figura$getHeight();
 
             CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
-            GpuBuffer gpuBuffer = RenderSystem.getDevice().createBuffer(() -> "Atlas Read Buffer", 9, width * height * atlasGpuTexture.getFormat().pixelSize());
+            GpuBuffer gpuBuffer = RenderSystem.getDevice().createBuffer(() -> "Atlas Read Buffer", 9, width * height * atlasGpuTexture.getFormat().blockSize());
             encoder.copyTextureToBuffer(atlasGpuTexture, gpuBuffer, 0, () -> {
-                try (GpuBuffer.MappedView readView = encoder.mapBuffer(gpuBuffer, true, false)) {
+                try (com.mojang.blaze3d.buffers.GpuBufferSlice.MappedView readView = gpuBuffer.map(true, false)) {
                     for (int k = 0; k < height; k++) {
                         for (int l = 0; l < width; l++) {
-                            int m = readView.data().getInt((l + k * width) * atlasGpuTexture.getFormat().pixelSize());
+                            int m = readView.data().getInt((l + k * width) * atlasGpuTexture.getFormat().blockSize());
                             nativeImage.setPixelABGR(l, height - k - 1, m | 0xFF000000);
                         }
                     }
@@ -77,7 +77,7 @@ public class TextureCustomization {
         try {
             Optional<Resource> resource = Minecraft.getInstance().getResourceManager().getResource(resourceLocation);
             // if the string is a valid resourceLocation but does not point to a valid resource, missingno
-            NativeImage image = resource.isPresent() ? NativeImage.read(resource.get().open()) : MissingTextureAtlasSpriteAccessor.generateImage(16, 16);
+            NativeImage image = resource.isPresent() ? NativeImage.read(NativeImage.Format.RGBA, resource.get().open()) : MissingTextureAtlasSpriteAccessor.generateImage(16, 16);
             return avatar.registerTexture(name, image, false);
         } catch (Exception e) {
             // spit an error if the player inputs a resource location that does point to a thing, but not to an image

@@ -1,8 +1,6 @@
 package org.figuramc.figura.model.rendering.nodeRenderer;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.SubmitNodeCollection;
 import net.minecraft.client.renderer.SubmitNodeStorage;
 import net.minecraft.client.renderer.feature.CustomFeatureRenderer;
@@ -13,8 +11,10 @@ import java.util.List;
 import java.util.Map;
 
 public class FiguraFeatureRenderer {
-    public void render(SubmitNodeCollection submitNodeCollection, MultiBufferSource.BufferSource bufferSource) {
-        List<FiguraSubmission> figuraSubmissions = new java.util.ArrayList<>(((NodeCollectorExtension) submitNodeCollection).getFiguraSubmissions());
+    public void render(SubmitNodeCollection submitNodeCollection, SubmitNodeStorage submitNodeStorage) {
+        List<FiguraSubmission> storedSubmissions = ((NodeCollectorExtension) submitNodeCollection).getFiguraSubmissions();
+        List<FiguraSubmission> figuraSubmissions = new java.util.ArrayList<>(storedSubmissions);
+        storedSubmissions.clear();
 
         for (FiguraSubmission figuraSubmission : figuraSubmissions) {
             if (figuraSubmission.avatar() == null)
@@ -23,12 +23,8 @@ public class FiguraFeatureRenderer {
             figuraSubmission.renderer().apply(
                     figuraSubmission.avatar(),
                     figuraSubmission.renderState(),
-                    bufferSource
+                    submitNodeStorage
             );
-        }
-
-        if (UIHelper.paperdoll) {
-            bufferSource.endBatch();
         }
     }
 }

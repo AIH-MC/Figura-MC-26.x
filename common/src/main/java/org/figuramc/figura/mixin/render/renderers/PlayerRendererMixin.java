@@ -6,7 +6,6 @@ import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
@@ -183,7 +182,7 @@ public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractC
         Map<ModelPart, PartPose> modelState = RenderUtils.captureModelState(model);
 
         Avatar localAvatar = avatar;
-        BiFunction<MultiBufferSource, PoseStack, Boolean> lambda = (bufferSource, stack) -> {
+        BiFunction<SubmitNodeCollector, PoseStack, Boolean> lambda = (bufferSource, stack) -> {
             if (localAvatar != null && localAvatar.luaRuntime != null) {
                 VanillaPart part = localAvatar.luaRuntime.vanilla_model.PLAYER;
                 RenderUtils.restoreModelPoseState(model, modelState);

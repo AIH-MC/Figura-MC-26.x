@@ -53,6 +53,6 @@ public class ContainerButton extends SwitchButton {
 
     @Override
     protected int getTextColor() {
-        return !this.isToggled() ? ChatFormatting.DARK_GRAY.getColor() : super.getTextColor();
+        return !this.isToggled() ? org.figuramc.figura.utils.ColorUtils.getLegacyColor(ChatFormatting.DARK_GRAY) : super.getTextColor();
     }
 }

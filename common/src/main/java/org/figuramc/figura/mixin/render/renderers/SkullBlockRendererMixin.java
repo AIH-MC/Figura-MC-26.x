@@ -3,7 +3,6 @@ package org.figuramc.figura.mixin.render.renderers;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.object.skull.SkullModelBase;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.SkullBlockRenderer;
@@ -103,7 +102,7 @@ public abstract class SkullBlockRendererMixin implements BlockEntityRenderer<Sku
             FiguraMod.popPushProfiler("render");
             int prevComplexity = localAvatar.complexity.remaining;
             localAvatar.complexity.remaining = localAvatar.permissions.get(Permissions.COMPLEXITY);
-            boolean rendered = !bool && localAvatar.skullRender(poseStack, bufferSource, light, null, yaw);
+            boolean rendered = !bool && localAvatar.skullRender(poseStack, submitNodeCollector, light, null, yaw);
             localAvatar.complexity.remaining = prevComplexity;
 
             if (bool || rendered) {

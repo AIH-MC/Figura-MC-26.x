@@ -7,7 +7,6 @@ import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.CapeLayer;
@@ -124,7 +123,7 @@ public abstract class CapeLayerMixin extends RenderLayer<AvatarRenderState, Play
         Avatar localAvatar = avatar;
         FiguraSubmitCallBackExtension submitCallBackExtension = (FiguraSubmitCallBackExtension) model;
 
-        submitCallBackExtension.figura$addPreRenderingCallback((multiBufferSource, poseStack) -> {
+        submitCallBackExtension.figura$addPreRenderingCallback((SubmitNodeCollector, poseStack) -> {
             if (localAvatar == null)
                 return true;
 
@@ -157,7 +156,7 @@ public abstract class CapeLayerMixin extends RenderLayer<AvatarRenderState, Play
         poseStack.pushPose();
         poseStack.last().set(pose.last());
 
-        ((NodeCollectorExtension)submitNodeCollector).submitFiguraModel(localAvatar, playerRenderState, (av, renderState, multiBufferSource) -> {
+        ((NodeCollectorExtension)submitNodeCollector).submitFiguraModel(localAvatar, playerRenderState, (av, renderState, SubmitNodeCollector) -> {
             // rot
             fakeCloak.setRotation(
                     (float) Math.toRadians(6f + finalR / 2f + finalQ),
@@ -173,7 +172,7 @@ public abstract class CapeLayerMixin extends RenderLayer<AvatarRenderState, Play
                     part.preTransform(model);
             }
 
-            av.capeRender(entity, multiBufferSource, poseStack, renderState.lightCoords, tickDelta, fakeCloak);
+            av.capeRender(entity, SubmitNodeCollector, poseStack, renderState.lightCoords, tickDelta, fakeCloak);
             return null;
 
         });

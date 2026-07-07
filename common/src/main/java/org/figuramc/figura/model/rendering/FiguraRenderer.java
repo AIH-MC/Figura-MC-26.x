@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -46,7 +45,15 @@ public abstract class FiguraRenderer {
 
     protected final Map<ParentType, List<FiguraModelPart>> separatedParts = new ConcurrentHashMap<>();
 
-    protected boolean isRendering, dirty;
+    protected int renderDepth;
+    protected boolean dirty;
+    private static final java.util.Queue<Runnable> DEFERRED_CLEANUP = new java.util.concurrent.ConcurrentLinkedQueue<>();
+
+    public static void processDeferredCleanup() {
+        Runnable r;
+        while ((r = DEFERRED_CLEANUP.poll()) != null)
+            r.run();
+    }
 
     // -- rendering data -- // 
 
@@ -61,10 +68,11 @@ public abstract class FiguraRenderer {
     public FiguraMat3 normalMat = FiguraMat3.of();
 
     // matrices
-    public MultiBufferSource bufferSource;
-    public VanillaModelData vanillaModelData = new VanillaModelData();
+    public SubmitNodeCollector submitNodeCollector;
+    public PoseStack currentPoseStack;
 
     public PartFilterScheme currentFilterScheme;
+    public VanillaModelData vanillaModelData = new VanillaModelData();
     public final HashMap<ParentType, ConcurrentLinkedQueue<Pair<FiguraMat4, FiguraMat3>>> pivotCustomizations = new HashMap<>(ParentType.values().length);
     protected final List<FiguraTextureSet> textureSets = new ArrayList<>();
     public final HashMap<String, FiguraTexture> textures = new HashMap<>();
@@ -94,7 +102,7 @@ public abstract class FiguraRenderer {
 
         // src files
         for (String key : src.keySet()) {
-            byte[] bytes = src.getByteArray(key).get();
+            byte[] bytes = src.getByteArray(key).orElse(new byte[0]);
             if (bytes.length > 0) {
                 textures.put(key, new FiguraTexture(avatar, key, bytes));
             } else {
@@ -158,8 +166,18 @@ public abstract class FiguraRenderer {
 
     public void invalidate() {
         this.dirty = true;
-        if (!this.isRendering)
-            clean();
+        if (this.renderDepth <= 0)
+            DEFERRED_CLEANUP.add(this::clean);
+    }
+
+    public void beginRender() {
+        renderDepth++;
+    }
+
+    public void endRender() {
+        renderDepth--;
+        if (renderDepth <= 0 && dirty)
+            DEFERRED_CLEANUP.add(this::clean);
     }
 
     public void sortParts() {
@@ -203,7 +221,7 @@ public abstract class FiguraRenderer {
      */
     public static FiguraMat4 worldToViewMatrix() {
         Minecraft client = Minecraft.getInstance();
-        Camera camera = client.gameRenderer.getMainCamera();
+        Camera camera = client.gameRenderer.mainCamera();
         Quaternionf rot = new Quaternionf(camera.rotation());
         rot.x *= -1;
         rot.z *= -1;
@@ -222,26 +240,28 @@ public abstract class FiguraRenderer {
      */
     public static FiguraMat4 worldToCameraPosMatrix() {
         Minecraft client = Minecraft.getInstance();
-        Camera camera = client.gameRenderer.getMainCamera();
+        Camera camera = client.gameRenderer.mainCamera();
         FiguraMat4 result = FiguraMat4.of();
         Vec3 cameraPos = camera.position().scale(-1);
         result.translate(cameraPos.x, cameraPos.y, cameraPos.z);
         return result;
     }
 
-    public void setupRenderer(PartFilterScheme currentFilterScheme, MultiBufferSource bufferSource, PoseStack matrices, float tickDelta, int light, float alpha, int overlay, boolean translucent, boolean glowing) {
-        this.setupRenderer(currentFilterScheme, bufferSource, tickDelta, light, alpha, overlay, translucent, glowing);
+    public void setupRenderer(PartFilterScheme currentFilterScheme, SubmitNodeCollector submitNodeCollector, PoseStack matrices, float tickDelta, int light, float alpha, int overlay, boolean translucent, boolean glowing) {
+        this.setupRenderer(currentFilterScheme, submitNodeCollector, tickDelta, light, alpha, overlay, translucent, glowing);
         this.setMatrices(matrices);
+        this.currentPoseStack = matrices;
     }
 
-    public void setupRenderer(PartFilterScheme currentFilterScheme, MultiBufferSource bufferSource, PoseStack matrices, float tickDelta, int light, float alpha, int overlay, boolean translucent, boolean glowing, double camX, double camY, double camZ) {
-        this.setupRenderer(currentFilterScheme, bufferSource, tickDelta, light, alpha, overlay, translucent, glowing);
+    public void setupRenderer(PartFilterScheme currentFilterScheme, SubmitNodeCollector submitNodeCollector, PoseStack matrices, float tickDelta, int light, float alpha, int overlay, boolean translucent, boolean glowing, double camX, double camY, double camZ) {
+        this.setupRenderer(currentFilterScheme, submitNodeCollector, tickDelta, light, alpha, overlay, translucent, glowing);
         this.setMatrices(camX, camY, camZ, matrices);
+        this.currentPoseStack = matrices;
     }
 
-    private void setupRenderer(PartFilterScheme currentFilterScheme, MultiBufferSource bufferSource, float tickDelta, int light, float alpha, int overlay, boolean translucent, boolean glowing) {
+    private void setupRenderer(PartFilterScheme currentFilterScheme, SubmitNodeCollector submitNodeCollector, float tickDelta, int light, float alpha, int overlay, boolean translucent, boolean glowing) {
         this.currentFilterScheme = currentFilterScheme;
-        this.bufferSource = bufferSource;
+        this.submitNodeCollector = submitNodeCollector;
         this.tickDelta = tickDelta;
         this.light = light;
         this.alpha = alpha;

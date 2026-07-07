@@ -9,7 +9,6 @@ import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.SubmitNodeStorage;
@@ -162,8 +161,7 @@ public class RenderUtils {
     static final ItemStackRenderState itemStackRenderState = new ItemStackRenderState();
     public static void renderStatic(LivingEntity entity, ItemStack item, ItemDisplayContext displayMode, PoseStack poseStack, int newLight, int newOverlay) {
         Minecraft client = Minecraft.getInstance();
-        FeatureRenderDispatcher featureRenderDispatcher = client.gameRenderer.getFeatureRenderDispatcher();
-        SubmitNodeStorage submitNodeStorage = featureRenderDispatcher.getSubmitNodeStorage();
+        SubmitNodeStorage submitNodeStorage = ((org.figuramc.figura.ducks.GameRendererAccessor) client.gameRenderer).figura$getHandAndScreenSubmitNodeStorage();
         if (entity != null)
             client.getItemModelResolver().updateForLiving(itemStackRenderState, item, displayMode, entity);
         else
@@ -174,7 +172,7 @@ public class RenderUtils {
 
 
     static PoseStack dummyPoseStack = new PoseStack();
-    public static void createDummySubmission(BitSet selection, SubmitNodeCollector submitNodeStorage, BiFunction<MultiBufferSource, PoseStack, Boolean> preRender, Runnable postRender) {
+    public static void createDummySubmission(BitSet selection, SubmitNodeCollector submitNodeStorage, BiFunction<SubmitNodeCollector, PoseStack, Boolean> preRender, Runnable postRender) {
         // otherwise something is very wrong and this will cause out of bounds exceptions and other bad things
         assert (selection.size() >= 3);
 

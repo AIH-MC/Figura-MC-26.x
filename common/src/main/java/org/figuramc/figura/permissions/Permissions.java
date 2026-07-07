@@ -136,7 +136,7 @@ public class Permissions {
         }
 
         Category(int index, ChatFormatting formatting) {
-            this(index, formatting.getColor(), Style.EMPTY.applyFormat(formatting));
+            this(index, org.figuramc.figura.utils.ColorUtils.getLegacyColor(formatting), Style.EMPTY.applyFormat(formatting));
         }
 
         Category(int index, int color, Style style) {

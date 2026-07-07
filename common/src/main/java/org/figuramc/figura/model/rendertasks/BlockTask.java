@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.QuadInstance;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.block.BlockStateModelSet;
 import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
 import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
@@ -42,7 +42,7 @@ public class BlockTask extends RenderTask {
     private final QuadInstance quadInstance = new QuadInstance();
 
     @Override
-    public void render(PoseStack poseStack, MultiBufferSource buffer, int light, int overlay) {
+    public void render(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int light, int overlay) {
         poseStack.scale(16, 16, 16);
 
         int newLight = this.customization.light != null ? this.customization.light : light;
@@ -72,17 +72,18 @@ public class BlockTask extends RenderTask {
             }
             if (renderType == null) continue;
 
-            VertexConsumer consumer = buffer.getBuffer(renderType);
-            PoseStack.Pose pose = poseStack.last();
-
-            for (BakedQuad quad : part.getQuads(null)) {
-                consumer.putBakedQuad(pose, quad, quadInstance);
-            }
-            for (Direction dir : Direction.values()) {
-                for (BakedQuad quad : part.getQuads(dir)) {
+            final RenderType rt = renderType;
+            final BlockStateModelPart p = part;
+            submitNodeCollector.submitCustomGeometry(poseStack, rt, (pose, consumer) -> {
+                for (BakedQuad quad : p.getQuads(null)) {
                     consumer.putBakedQuad(pose, quad, quadInstance);
                 }
-            }
+                for (Direction dir : Direction.values()) {
+                    for (BakedQuad quad : p.getQuads(dir)) {
+                        consumer.putBakedQuad(pose, quad, quadInstance);
+                    }
+                }
+            });
         }
     }
 

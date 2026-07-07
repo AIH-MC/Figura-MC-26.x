@@ -1,4 +1,5 @@
 package org.figuramc.figura.mixin.render.renderers;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.client.Minecraft;
@@ -32,7 +33,7 @@ public abstract class ArrowRendererMixin<T extends AbstractArrow, S extends Arro
     }
 
     @ModifyArg(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SubmitNodeCollector;submitModel(Lnet/minecraft/client/model/Model;Ljava/lang/Object;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/resources/Identifier;IIILnet/minecraft/client/renderer/feature/ModelFeatureRenderer$CrumblingOverlay;)V", ordinal = 0), method = "submit(Lnet/minecraft/client/renderer/entity/state/ArrowRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;)V")
-    private Model<S> render(Model<S> par1, @Local(argsOnly = true) S arrowRenderState) {
+    private Model<S> render(Model<S> par1, @Local(argsOnly = true) S arrowRenderState, @Local(argsOnly = true) SubmitNodeCollector realSubmitNodeCollector) {
         Integer id = ((FiguraEntityRenderStateExtension)arrowRenderState).figura$getEntityId();
         if (id == null)
             return par1;
@@ -48,7 +49,7 @@ public abstract class ArrowRendererMixin<T extends AbstractArrow, S extends Arro
         if (avatar == null || avatar.permissions.get(Permissions.VANILLA_MODEL_EDIT) == 0)
             return par1;
 
-        ((FiguraSubmitCallBackExtension)par1).figura$addPreRenderingCallback((multiBufferSource, poseStack) -> {
+        ((FiguraSubmitCallBackExtension)par1).figura$addPreRenderingCallback((SubmitNodeCollector, poseStack) -> {
             FiguraMod.pushProfiler(FiguraMod.MOD_ID);
             FiguraMod.pushProfiler(avatar);
             FiguraMod.pushProfiler("arrowRender");
@@ -57,7 +58,7 @@ public abstract class ArrowRendererMixin<T extends AbstractArrow, S extends Arro
             boolean bool = avatar.arrowRenderEvent(tickDelta, EntityAPI.wrap(arrow));
 
             FiguraMod.popPushProfiler("render");
-            if (bool || avatar.renderArrow(poseStack, multiBufferSource, tickDelta, arrowRenderState.lightCoords)) {
+            if (bool || avatar.renderArrow(poseStack, realSubmitNodeCollector, tickDelta, arrowRenderState.lightCoords)) {
                 poseStack.popPose();
                 // this will skip the original render call
                 return false;

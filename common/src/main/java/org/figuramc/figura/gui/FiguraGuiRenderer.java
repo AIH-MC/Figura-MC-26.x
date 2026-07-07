@@ -3,11 +3,12 @@ package org.figuramc.figura.gui;
 import com.mojang.blaze3d.ProjectionType;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.GpuFormat;
 import com.mojang.blaze3d.textures.*;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.gui.render.pip.PictureInPictureRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
+
 import net.minecraft.client.renderer.Projection;
 import net.minecraft.client.renderer.ProjectionMatrixBuffer;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -29,8 +30,8 @@ public class FiguraGuiRenderer extends PictureInPictureRenderer<FiguraGuiRenderS
     );
     private final Projection projection = new Projection();
 
-    public FiguraGuiRenderer(MultiBufferSource.BufferSource bufferSource) {
-        super(bufferSource);
+    public FiguraGuiRenderer() {
+        super();
     }
 
     @Override
@@ -44,12 +45,12 @@ public class FiguraGuiRenderer extends PictureInPictureRenderer<FiguraGuiRenderS
     }
 
     @Override
-    protected void renderToTexture(FiguraGuiRenderState state, PoseStack poseStack) {
-        state.avatar().hudRender(poseStack, this.bufferSource, state.entity(), state.tickDelta());
+    protected void renderToTexture(FiguraGuiRenderState state, PoseStack poseStack, net.minecraft.client.renderer.SubmitNodeCollector submitNodeCollector) {
+        state.avatar().hudRender(poseStack, submitNodeCollector, state.entity(), state.tickDelta());
     }
 
     @Override
-    public void prepare(FiguraGuiRenderState state, GuiRenderState guiRenderState, int guiScale) {
+    public void prepare(FiguraGuiRenderState state, GuiRenderState guiRenderState, net.minecraft.client.renderer.feature.FeatureRenderDispatcher featureRenderDispatcher, int guiScale) {
         int pixelW = (state.x1() - state.x0()) * guiScale;
         int pixelH = (state.y1() - state.y0()) * guiScale;
         float guiWidth = (float) (state.x1() - state.x0());
@@ -75,11 +76,11 @@ public class FiguraGuiRenderer extends PictureInPictureRenderer<FiguraGuiRenderS
 
         if (texture == null) {
             texture = gpuDevice.createTexture(
-                    () -> "UI Figura GUI texture", 13, TextureFormat.RGBA8, pixelW, pixelH, 1, 1
+                    () -> "UI Figura GUI texture", 13, GpuFormat.RGBA8_UNORM, pixelW, pixelH, 1, 1
             );
             textureView = gpuDevice.createTextureView(texture);
             depthTexture = gpuDevice.createTexture(
-                    () -> "UI Figura GUI depth texture", 9, TextureFormat.DEPTH32, pixelW, pixelH, 1, 1
+                    () -> "UI Figura GUI depth texture", 9, GpuFormat.D32_FLOAT, pixelW, pixelH, 1, 1
             );
             depthTextureView = gpuDevice.createTextureView(depthTexture);
             sampler = gpuDevice.createSampler(
@@ -89,7 +90,7 @@ public class FiguraGuiRenderer extends PictureInPictureRenderer<FiguraGuiRenderS
             );
         }
 
-        gpuDevice.createCommandEncoder().clearColorAndDepthTextures(texture, 0, depthTexture, 1.0);
+        gpuDevice.createCommandEncoder().clearColorAndDepthTextures(texture, new org.joml.Vector4f(0f, 0f, 0f, 0f), depthTexture, 0.0);
 
         projection.setupOrtho(-1000.0F, 1000.0F, guiWidth, guiHeight, true);
         RenderSystem.setProjectionMatrix(
@@ -99,8 +100,15 @@ public class FiguraGuiRenderer extends PictureInPictureRenderer<FiguraGuiRenderS
         RenderSystem.outputColorTextureOverride = textureView;
         RenderSystem.outputDepthTextureOverride = depthTextureView;
 
-        renderToTexture(state, new PoseStack());
-        this.bufferSource.endBatch();
+        net.minecraft.client.renderer.SubmitNodeStorage sns = ((org.figuramc.figura.mixin.gui.PictureInPictureRendererAccessor) this).figura$getSubmitNodeStorage();
+        org.figuramc.figura.model.rendering.FiguraRenderer renderer = state.avatar() == null ? null : state.avatar().renderer;
+        if (renderer != null) renderer.beginRender();
+        try {
+            renderToTexture(state, new PoseStack(), sns);
+            featureRenderDispatcher.renderAllFeatures(sns);
+        } finally {
+            if (renderer != null) renderer.endRender();
+        }
 
         RenderSystem.outputColorTextureOverride = null;
         RenderSystem.outputDepthTextureOverride = null;
